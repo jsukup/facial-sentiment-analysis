@@ -60,9 +60,7 @@ export default function App() {
 
   const handleDemographicComplete = async (data: DemographicData) => {
     try {
-      const newUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      setUserId(newUserId);
-
+      // Send demographic data to API - it will generate a proper uid
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-8f45bf92/demographics`,
         {
@@ -71,25 +69,27 @@ export default function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${publicAnonKey}`,
           },
-          body: JSON.stringify({
-            userId: newUserId,
-            ...data,
-          }),
+          body: JSON.stringify(data),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        logError("Failed to store demographic data", new Error(errorText), "App", newUserId);
+        logError("Failed to store demographic data", new Error(errorText), "App", "");
         alert("Failed to store demographic data. Please try again.");
         return;
       }
 
-      logUserAction("demographic_data_submitted", newUserId);
+      // Get the generated userId from the database
+      const result = await response.json();
+      const dbUserId = result.userId;
+      
+      setUserId(dbUserId);
+      logUserAction("demographic_data_submitted", dbUserId);
 
       setAppState("webcam-setup");
     } catch (error) {
-      logError("Error submitting demographics", error as Error, "App", newUserId);
+      logError("Error submitting demographics", error as Error, "App", "");
       alert("An error occurred. Please try again.");
     }
   };
@@ -103,7 +103,7 @@ export default function App() {
     setAppState("experiment");
   };
 
-  const handleExperimentComplete = async (sentimentData: SentimentDataPoint[]) => {
+  const handleExperimentComplete = async (sentimentData: SentimentDataPoint[], captureId?: string) => {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-8f45bf92/sentiment`,
@@ -115,6 +115,7 @@ export default function App() {
           },
           body: JSON.stringify({
             userId,
+            captureId, // Include the capture ID if we have it from video upload
             sentimentData,
           }),
         }

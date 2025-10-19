@@ -159,16 +159,17 @@ app.post("/make-server-8f45bf92/demographics", rateLimit(10, 60000), async (c) =
     const body = await c.req.json();
     const sanitizedData = validateDemographics(body);
     const { age, race, ethnicity, nationality, gender, otherData } = sanitizedData;
+    const { userId } = body;
 
-    // Insert into PostgreSQL
+    // Insert into PostgreSQL - properly store in user_demographics table
     const { data, error } = await supabase
       .from('user_demographics')
       .insert({
         age,
+        gender,
         race,
         ethnicity,
         nationality,
-        gender,
         other_data: otherData,
         consent_timestamp: new Date().toISOString(),
         facial_analysis_consent: true,
@@ -182,6 +183,7 @@ app.post("/make-server-8f45bf92/demographics", rateLimit(10, 60000), async (c) =
       return c.json({ error: `Failed to store demographics: ${error.message}` }, 500);
     }
 
+    // Return the generated uid from the database
     return c.json({ success: true, userId: data.uid });
   } catch (error) {
     console.log(`Error storing demographics: ${error}`);
@@ -195,6 +197,7 @@ app.post("/make-server-8f45bf92/upload-webcam", async (c) => {
     const formData = await c.req.formData();
     const file = formData.get('video') as File;
     const userId = formData.get('userId') as string;
+    const experimentId = formData.get('experimentId') as string;
 
     if (!file || !userId) {
       return c.json({ error: 'video file and userId are required' }, 400);
@@ -216,22 +219,25 @@ app.post("/make-server-8f45bf92/upload-webcam", async (c) => {
       return c.json({ error: `Upload failed: ${error.message}` }, 500);
     }
 
-    // Store metadata in PostgreSQL
-    const { error: dbError } = await supabase
+    // Store metadata in PostgreSQL - use correct column names
+    const { data: captureData, error: dbError } = await supabase
       .from('user_webcapture')
       .insert({
-        uid: userId,
-        video_filename: fileName,
-        video_storage_path: data.path,
+        user_uid: userId, // Changed from 'uid' to 'user_uid'
+        experiment_id: experimentId || null, // Add experiment reference
+        video_path: data.path, // Changed from 'video_storage_path' to 'video_path'
         video_url: `${BUCKET_NAME}/${data.path}`,
-      });
+        duration_seconds: null, // Will be updated when known
+      })
+      .select('capture_id')
+      .single();
 
     if (dbError) {
       console.log(`Database error: ${dbError.message}`);
-      // Continue even if DB insert fails - video is uploaded
+      return c.json({ error: `Database error: ${dbError.message}` }, 500);
     }
 
-    return c.json({ success: true, fileName, path: data.path });
+    return c.json({ success: true, fileName, path: data.path, captureId: captureData.capture_id });
   } catch (error) {
     console.log(`Error uploading webcam video: ${error}`);
     return c.json({ error: `Failed to upload video: ${error.message}` }, 500);
@@ -242,26 +248,62 @@ app.post("/make-server-8f45bf92/upload-webcam", async (c) => {
 app.post("/make-server-8f45bf92/sentiment", async (c) => {
   try {
     const body = await c.req.json();
-    const { userId, sentimentData } = body;
+    const { userId, captureId, sentimentData } = body;
 
     if (!userId || !sentimentData) {
       return c.json({ error: 'userId and sentimentData are required' }, 400);
     }
 
-    // Store in PostgreSQL
-    const { error } = await supabase
-      .from('user_sentiment')
-      .insert({
-        uid: userId,
-        sentiment_data: sentimentData,
-      });
-
-    if (error) {
-      console.log(`Database error: ${error.message}`);
-      return c.json({ error: `Failed to store sentiment: ${error.message}` }, 500);
+    // If we don't have a captureId, try to find the most recent one for this user
+    let finalCaptureId = captureId;
+    if (!finalCaptureId) {
+      const { data: captureData, error: captureError } = await supabase
+        .from('user_webcapture')
+        .select('capture_id')
+        .eq('user_uid', userId)
+        .order('captured_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!captureError && captureData) {
+        finalCaptureId = captureData.capture_id;
+      }
     }
 
-    return c.json({ success: true, userId });
+    // Store sentiment data points properly
+    if (Array.isArray(sentimentData)) {
+      // Batch insert sentiment data points
+      const sentimentRecords = sentimentData.map((dataPoint: any) => ({
+        capture_id: finalCaptureId,
+        timestamp_seconds: dataPoint.timestamp || dataPoint.time,
+        emotions: dataPoint.emotions || dataPoint,
+      }));
+
+      const { error } = await supabase
+        .from('user_sentiment')
+        .insert(sentimentRecords);
+
+      if (error) {
+        console.log(`Database error: ${error.message}`);
+        return c.json({ error: `Failed to store sentiment: ${error.message}` }, 500);
+      }
+    } else {
+      // Single sentiment data point
+      const { error } = await supabase
+        .from('user_sentiment')
+        .insert({
+          capture_id: finalCaptureId,
+          timestamp_seconds: sentimentData.timestamp || 0,
+          emotions: sentimentData.emotions || sentimentData,
+        });
+
+      if (error) {
+        console.log(`Database error: ${error.message}`);
+        return c.json({ error: `Failed to store sentiment: ${error.message}` }, 500);
+      }
+    }
+
+    return c.json({ success: true, userId, captureId: finalCaptureId });
   } catch (error) {
     console.log(`Error storing sentiment data: ${error}`);
     return c.json({ error: `Failed to store sentiment: ${error.message}` }, 500);
@@ -313,20 +355,20 @@ app.get("/make-server-8f45bf92/webcam-video/:userId", requireAuth, async (c) => 
   try {
     const userId = c.req.param('userId');
 
-    // Get video metadata from PostgreSQL
+    // Get video metadata from PostgreSQL - use correct column names
     const { data: videoMeta, error: dbError } = await supabase
       .from('user_webcapture')
-      .select('video_storage_path')
-      .eq('uid', userId)
+      .select('video_path')
+      .eq('user_uid', userId)
       .single();
 
-    if (dbError || !videoMeta || !videoMeta.video_storage_path) {
+    if (dbError || !videoMeta || !videoMeta.video_path) {
       return c.json({ error: 'Video not found' }, 404);
     }
 
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
-      .createSignedUrl(videoMeta.video_storage_path, 3600); // 1 hour expiry
+      .createSignedUrl(videoMeta.video_path, 3600); // 1 hour expiry
 
     if (error) {
       console.log(`Error creating signed URL: ${error.message}`);

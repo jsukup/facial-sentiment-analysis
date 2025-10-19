@@ -9,7 +9,7 @@ import { logError, logUserAction, logPerformance } from "../utils/logger";
 interface ExperimentViewProps {
   webcamStream: MediaStream;
   userId: string;
-  onComplete: (sentimentData: SentimentDataPoint[]) => void;
+  onComplete: (sentimentData: SentimentDataPoint[], captureId?: string) => void;
 }
 
 export interface SentimentDataPoint {
@@ -155,7 +155,11 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
           const formData = new FormData();
           formData.append('video', blob, `webcam_${userId}.webm`);
           formData.append('userId', userId);
+          // Get the first experiment from database (Big Buck Bunny)
+          // In a production app, you'd pass this as a prop
+          formData.append('experimentId', ''); // Will use default experiment
 
+          let captureId: string | undefined;
           try {
             const response = await fetch(
               `https://${projectId}.supabase.co/functions/v1/make-server-8f45bf92/upload-webcam`,
@@ -172,7 +176,9 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
               const errorText = await response.text();
               logError('Failed to upload webcam video', new Error(errorText), "ExperimentView", userId);
             } else {
-              logUserAction('webcam_video_uploaded', userId);
+              const result = await response.json();
+              captureId = result.captureId; // Get the capture ID from the response
+              logUserAction('webcam_video_uploaded', userId, { captureId });
             }
           } catch (error) {
             logError('Error uploading webcam video', error as Error, "ExperimentView", userId);
@@ -181,7 +187,7 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
           // Clean up MediaRecorder reference
           mediaRecorderRef.current = null;
           
-          onComplete(sentimentData);
+          onComplete(sentimentData, captureId);
         };
 
         mediaRecorder.start();
