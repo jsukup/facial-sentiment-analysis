@@ -1,0 +1,2167 @@
+{
+  "config": {
+    "configFile": "/home/john/facial_sentiment/playwright.config.ts",
+    "rootDir": "/home/john/facial_sentiment/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/results.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/john/facial_sentiment/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/john/facial_sentiment/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/john/facial_sentiment/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/home/john/facial_sentiment/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/john/facial_sentiment/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/home/john/facial_sentiment/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/john/facial_sentiment/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/home/john/facial_sentiment/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/john/facial_sentiment/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/home/john/facial_sentiment/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 8,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "admin-auth.spec.ts",
+      "file": "admin-auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin Authentication Flow",
+          "file": "admin-auth.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should show mode selection screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-a04850bf95ba317c77c5",
+              "file": "admin-auth.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should navigate to admin login when admin mode selected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-f27efa722af370b51391",
+              "file": "admin-auth.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "should validate required fields on admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-06c50a9496164d1a7a81",
+              "file": "admin-auth.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "should handle invalid credentials gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-84d8a4ab436de361c78a",
+              "file": "admin-auth.spec.ts",
+              "line": 36,
+              "column": 7
+            },
+            {
+              "title": "should handle successful admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-d35ddbf5e6c2eefa3c31",
+              "file": "admin-auth.spec.ts",
+              "line": 61,
+              "column": 7
+            },
+            {
+              "title": "should protect admin dashboard from direct access",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-7a936067e11b9fdf7523",
+              "file": "admin-auth.spec.ts",
+              "line": 106,
+              "column": 7
+            },
+            {
+              "title": "should handle network errors during login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-64483e5bfc0af2217474",
+              "file": "admin-auth.spec.ts",
+              "line": 120,
+              "column": 7
+            },
+            {
+              "title": "should clear password field after failed login attempt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-3661b7dd7e1b27e7f01f",
+              "file": "admin-auth.spec.ts",
+              "line": 137,
+              "column": 7
+            },
+            {
+              "title": "should show loading state during authentication",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-d4af0b009b9b41278182",
+              "file": "admin-auth.spec.ts",
+              "line": 167,
+              "column": 7
+            },
+            {
+              "title": "should maintain session across page refreshes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-a18be314cbb99a676567",
+              "file": "admin-auth.spec.ts",
+              "line": 197,
+              "column": 7
+            },
+            {
+              "title": "should show mode selection screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-cd9d6c0e7de892525388",
+              "file": "admin-auth.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should navigate to admin login when admin mode selected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-cba2947517eb35edaf1d",
+              "file": "admin-auth.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "should validate required fields on admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-fc4cf907459bc43f6ffc",
+              "file": "admin-auth.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "should handle invalid credentials gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-fce60843b7a294682f16",
+              "file": "admin-auth.spec.ts",
+              "line": 36,
+              "column": 7
+            },
+            {
+              "title": "should handle successful admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-1c1525af337517368ec0",
+              "file": "admin-auth.spec.ts",
+              "line": 61,
+              "column": 7
+            },
+            {
+              "title": "should protect admin dashboard from direct access",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-f8457b972c21357d80e9",
+              "file": "admin-auth.spec.ts",
+              "line": 106,
+              "column": 7
+            },
+            {
+              "title": "should handle network errors during login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-416754c3ba41ba4412b8",
+              "file": "admin-auth.spec.ts",
+              "line": 120,
+              "column": 7
+            },
+            {
+              "title": "should clear password field after failed login attempt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-5858d25831010befa51b",
+              "file": "admin-auth.spec.ts",
+              "line": 137,
+              "column": 7
+            },
+            {
+              "title": "should show loading state during authentication",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-c6b6f4619ddd504f4c19",
+              "file": "admin-auth.spec.ts",
+              "line": 167,
+              "column": 7
+            },
+            {
+              "title": "should maintain session across page refreshes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-ae241d266e8d9284871e",
+              "file": "admin-auth.spec.ts",
+              "line": 197,
+              "column": 7
+            },
+            {
+              "title": "should show mode selection screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-5f1843730b8b7078699b",
+              "file": "admin-auth.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should navigate to admin login when admin mode selected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-9c2b937fa4279958dc23",
+              "file": "admin-auth.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "should validate required fields on admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-7b739cd08f06f9257428",
+              "file": "admin-auth.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "should handle invalid credentials gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-9e5f206ab9b24062d847",
+              "file": "admin-auth.spec.ts",
+              "line": 36,
+              "column": 7
+            },
+            {
+              "title": "should handle successful admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-14a58a74f3c60876a3fb",
+              "file": "admin-auth.spec.ts",
+              "line": 61,
+              "column": 7
+            },
+            {
+              "title": "should protect admin dashboard from direct access",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-2b001ad9396ad9c01a4d",
+              "file": "admin-auth.spec.ts",
+              "line": 106,
+              "column": 7
+            },
+            {
+              "title": "should handle network errors during login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-2d82537bf71e6f0b5cae",
+              "file": "admin-auth.spec.ts",
+              "line": 120,
+              "column": 7
+            },
+            {
+              "title": "should clear password field after failed login attempt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-58778709d00175f760bd",
+              "file": "admin-auth.spec.ts",
+              "line": 137,
+              "column": 7
+            },
+            {
+              "title": "should show loading state during authentication",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-d156f0b9050b31e1176b",
+              "file": "admin-auth.spec.ts",
+              "line": 167,
+              "column": 7
+            },
+            {
+              "title": "should maintain session across page refreshes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-7de1ac68d43c36510263",
+              "file": "admin-auth.spec.ts",
+              "line": 197,
+              "column": 7
+            },
+            {
+              "title": "should show mode selection screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-203797b1c87c25a412c6",
+              "file": "admin-auth.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should navigate to admin login when admin mode selected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-8258db75bb2659f73c72",
+              "file": "admin-auth.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "should validate required fields on admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-deed1a50fcdd7674a48b",
+              "file": "admin-auth.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "should handle invalid credentials gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-560f2471bd8b6ab10ea4",
+              "file": "admin-auth.spec.ts",
+              "line": 36,
+              "column": 7
+            },
+            {
+              "title": "should handle successful admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-4aa87c812215aa06ed9d",
+              "file": "admin-auth.spec.ts",
+              "line": 61,
+              "column": 7
+            },
+            {
+              "title": "should protect admin dashboard from direct access",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-3b45fd754cf989d259df",
+              "file": "admin-auth.spec.ts",
+              "line": 106,
+              "column": 7
+            },
+            {
+              "title": "should handle network errors during login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-1db8075ba88d9bb1d5e8",
+              "file": "admin-auth.spec.ts",
+              "line": 120,
+              "column": 7
+            },
+            {
+              "title": "should clear password field after failed login attempt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-13bd3e5c80f79bab6fc3",
+              "file": "admin-auth.spec.ts",
+              "line": 137,
+              "column": 7
+            },
+            {
+              "title": "should show loading state during authentication",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-9582369ead95dfdfdd45",
+              "file": "admin-auth.spec.ts",
+              "line": 167,
+              "column": 7
+            },
+            {
+              "title": "should maintain session across page refreshes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-b47b5999ff9d0bd7b81d",
+              "file": "admin-auth.spec.ts",
+              "line": 197,
+              "column": 7
+            },
+            {
+              "title": "should show mode selection screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-3c39bb5fb9a341244247",
+              "file": "admin-auth.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should navigate to admin login when admin mode selected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-a3ca1f9c6bde8c38f3e5",
+              "file": "admin-auth.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "should validate required fields on admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-8a252bdc9650a1c5c5d1",
+              "file": "admin-auth.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "should handle invalid credentials gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-adc456660877be678fc8",
+              "file": "admin-auth.spec.ts",
+              "line": 36,
+              "column": 7
+            },
+            {
+              "title": "should handle successful admin login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-a382c903c1dbc82fe7b3",
+              "file": "admin-auth.spec.ts",
+              "line": 61,
+              "column": 7
+            },
+            {
+              "title": "should protect admin dashboard from direct access",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-f91b4605477c0ec15243",
+              "file": "admin-auth.spec.ts",
+              "line": 106,
+              "column": 7
+            },
+            {
+              "title": "should handle network errors during login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-315f462d6ba2f8c16e03",
+              "file": "admin-auth.spec.ts",
+              "line": 120,
+              "column": 7
+            },
+            {
+              "title": "should clear password field after failed login attempt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-b2bd8f5633d23da088a9",
+              "file": "admin-auth.spec.ts",
+              "line": 137,
+              "column": 7
+            },
+            {
+              "title": "should show loading state during authentication",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-dad7c6a690f3f8963e6e",
+              "file": "admin-auth.spec.ts",
+              "line": 167,
+              "column": 7
+            },
+            {
+              "title": "should maintain session across page refreshes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4030f0bfef91ae700c6b-b071a5c8e3cb4732a419",
+              "file": "admin-auth.spec.ts",
+              "line": 197,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "facial-sentiment-workflow.spec.ts",
+      "file": "facial-sentiment-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Facial Sentiment Analysis Workflow",
+          "file": "facial-sentiment-workflow.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should navigate to participant mode and show camera interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-32d3f4b1864c79ccbdf6",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission denial gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-7d2d5e849bfaf9cd5e7c",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission grant and start video stream",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-563263f359c332ffa670",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "should display sentiment analysis results in real-time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-16a1e3436e7e8aa2e891",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 67,
+              "column": 7
+            },
+            {
+              "title": "should record and save facial analysis data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-39b111a0ea6b2eaa4f81",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 113,
+              "column": 7
+            },
+            {
+              "title": "should handle face detection failures gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-d83a7b7f3f89f5541cb5",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 176,
+              "column": 7
+            },
+            {
+              "title": "should display analysis history and timestamps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-3e846c065c3895cd9f2c",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 207,
+              "column": 7
+            },
+            {
+              "title": "should export analysis results",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-72a2a558b2bc0e9768d0",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 258,
+              "column": 7
+            },
+            {
+              "title": "should handle analysis interruption and resumption",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-359449e19a8d3e8f2ce4",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "should validate demographic data collection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-ffd8c29b72c536827de1",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 365,
+              "column": 7
+            },
+            {
+              "title": "should navigate to participant mode and show camera interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-e74911b438642b815375",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission denial gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-24f68e49a35f2e81c38e",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission grant and start video stream",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-70027d6e0157bcdda9d1",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "should display sentiment analysis results in real-time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-4a99608cf3483215365e",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 67,
+              "column": 7
+            },
+            {
+              "title": "should record and save facial analysis data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-3093791f928a4e5e1637",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 113,
+              "column": 7
+            },
+            {
+              "title": "should handle face detection failures gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-78a48e0b397dbae57bc6",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 176,
+              "column": 7
+            },
+            {
+              "title": "should display analysis history and timestamps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-3ab71f3e31ca1e3264cf",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 207,
+              "column": 7
+            },
+            {
+              "title": "should export analysis results",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-2bb8296eccb43ce79269",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 258,
+              "column": 7
+            },
+            {
+              "title": "should handle analysis interruption and resumption",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-5d1c025280bbed2d7475",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "should validate demographic data collection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-e7133433e7a973803a38",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 365,
+              "column": 7
+            },
+            {
+              "title": "should navigate to participant mode and show camera interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-b4b5072e26d46cb69c8f",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission denial gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-eeb89505215b8f64e5f2",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission grant and start video stream",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-971b1922c23347d4ff41",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "should display sentiment analysis results in real-time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-a0ebcbde1e3cd23dfe99",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 67,
+              "column": 7
+            },
+            {
+              "title": "should record and save facial analysis data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-6b435ad49cb703251ff0",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 113,
+              "column": 7
+            },
+            {
+              "title": "should handle face detection failures gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-97247a6fce75da46983d",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 176,
+              "column": 7
+            },
+            {
+              "title": "should display analysis history and timestamps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-5b21b01a0a3dcf978127",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 207,
+              "column": 7
+            },
+            {
+              "title": "should export analysis results",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-3dfbba70ca7f7d1a2d56",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 258,
+              "column": 7
+            },
+            {
+              "title": "should handle analysis interruption and resumption",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-805b6405eebb00be1c63",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "should validate demographic data collection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-c1421bd2a26bd98cdafd",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 365,
+              "column": 7
+            },
+            {
+              "title": "should navigate to participant mode and show camera interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-a92d01647f5d9b44600f",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission denial gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-a4007dc980f3dfcec219",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission grant and start video stream",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-d7d9e78d6f4522de7825",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "should display sentiment analysis results in real-time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-adac7c4982a9ce10ded0",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 67,
+              "column": 7
+            },
+            {
+              "title": "should record and save facial analysis data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-2b6202412bff62721fde",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 113,
+              "column": 7
+            },
+            {
+              "title": "should handle face detection failures gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-808854b396e31ca04885",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 176,
+              "column": 7
+            },
+            {
+              "title": "should display analysis history and timestamps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-88eafa1b09876cec2bb6",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 207,
+              "column": 7
+            },
+            {
+              "title": "should export analysis results",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-cd557f6a641f1f39d72e",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 258,
+              "column": 7
+            },
+            {
+              "title": "should handle analysis interruption and resumption",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-9cbc332275f601b1bf01",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "should validate demographic data collection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-199dfcef8529b8b2c5cc",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 365,
+              "column": 7
+            },
+            {
+              "title": "should navigate to participant mode and show camera interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-ec0f41bc25f9503422fd",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission denial gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-54155ffbdf7fa3bf1abb",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "should handle camera permission grant and start video stream",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-7e9850cd75d9fb0518b4",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "should display sentiment analysis results in real-time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-4c3554b0bdf443b0bf11",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 67,
+              "column": 7
+            },
+            {
+              "title": "should record and save facial analysis data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-ee1eb2141d857d277361",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 113,
+              "column": 7
+            },
+            {
+              "title": "should handle face detection failures gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-8cd57fa7ef5f3674469f",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 176,
+              "column": 7
+            },
+            {
+              "title": "should display analysis history and timestamps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-0a5fd16f5cafba28517f",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 207,
+              "column": 7
+            },
+            {
+              "title": "should export analysis results",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-263790f1f6cccacfbf8b",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 258,
+              "column": 7
+            },
+            {
+              "title": "should handle analysis interruption and resumption",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-38a51a12af52c7d23b09",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 314,
+              "column": 7
+            },
+            {
+              "title": "should validate demographic data collection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari",
+                  "projectName": "Mobile Safari",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7a6dfb131795280b7bae-e9735478ed7225910fbc",
+              "file": "facial-sentiment-workflow.spec.ts",
+              "line": 365,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-10-18T07:09:25.914Z",
+    "duration": 132.81400000000002,
+    "expected": 0,
+    "skipped": 100,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

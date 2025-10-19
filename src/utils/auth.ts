@@ -1,0 +1,68 @@
+// Authentication utilities for admin JWT token management
+
+interface AuthTokenData {
+  token: string;
+  expiry: number;
+}
+
+// Get the stored admin token
+export const getAdminToken = (): string | null => {
+  const token = localStorage.getItem('adminToken');
+  const expiry = localStorage.getItem('adminTokenExpiry');
+  
+  if (!token || !expiry) {
+    return null;
+  }
+  
+  // Check if token is expired
+  if (Date.now() > parseInt(expiry)) {
+    clearAdminToken();
+    return null;
+  }
+  
+  return token;
+};
+
+// Clear admin token from storage
+export const clearAdminToken = (): void => {
+  localStorage.removeItem('adminToken');
+  localStorage.removeItem('adminTokenExpiry');
+};
+
+// Check if user is authenticated
+export const isAdminAuthenticated = (): boolean => {
+  return getAdminToken() !== null;
+};
+
+// Make authenticated API request
+export const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  const token = getAdminToken();
+  
+  if (!token) {
+    throw new Error('No authentication token available');
+  }
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    ...options.headers,
+  };
+  
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+  
+  // If unauthorized, clear token and throw error
+  if (response.status === 401) {
+    clearAdminToken();
+    throw new Error('Authentication failed - please login again');
+  }
+  
+  return response;
+};
+
+// Get API base URL
+export const getApiBaseUrl = (): string => {
+  return import.meta.env.VITE_API_BASE_URL || 'https://spylqvzwvcjuaqgthxhw.supabase.co/functions/v1';
+};

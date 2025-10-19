@@ -1,0 +1,22 @@
+Create a real-time facial sentiment analysis webapp that utilizes a modern, minimalist designed, dynamic dashboard rendering.
+1. User Onboarding: 
+--A user goes to the site and is presented with a modal displaying the webapp name (placeholder for now) and a privacy policy using GDPR language. They are presented with an "Accept" and "Reject" button.
+--On "Accept," the model updates to show a form collecting demographic data (i.e., age, race/ethnicity, nationality, etc.). A "Complete" button at the form's bottom passes the user information to the backend 'user_demographics' Supabase table for storage.
+2. Facial Sentiment Analysis Tool
+--The webapp asks for permission to use the user's webcam while on the website.
+--With the webcam on, a user is asked to position themselves within the frame of the webcam. Their image is presented to them in the center of the screen with a "Ready" button beneath.
+--When clicking "Ready," the "Ready" button disappears dynamically and the webcam image is replaced with a modal indicating the details of the facial sentiment analysis experiment. Another "Ready" button is at the bottom of the modal, when clicked, closes the modal
+--After the modal closes, the user is presented with a video playback window in the middle of the webapp dashboard. A "Play" button is presented, when clicked, starts the experiment video.
+--While the user watches the experiment video, their webcam is capturing video of them watching the experiment video. This is not shown to the user.
+--The webcam video is either 1) passed through a real-time facial analysis model to capture a user's reactions to the video their are watching or, 2) passed through a model on completion of watching the video.
+--The start and stop of video capture should automatically start/stop with the experiment video so that the final webcam capture is the same length as the experiment video.
+3. Storage
+--When the experiment/webcam video is complete, the user is presented with a final modal thanking them for their participation.
+--The webcam video is stored in a 'user_webcapture' Supabase Storage container.
+--The facial analysis data is stored in a 'user_sentiment' Supabase table linked to the 'user_webcapture' Storage by UID
+4. Admin Dashboard
+--Data from 'user_demographics', 'user_webcapture', and 'user_sentiment' is used to populate an admin dashboard
+--The dashboard contains a video playback for the experiment video on the top half of the dashboard. An admin is presented with a video reel beneath the video to allow skipping to different video locations.
+--Aggregate facial sentiment analysis data is presented and dynamically updated beneath the video playback on the lower half of the dashboard. This data is dynamically updated to show the levels of facial sentiment (i.e., "happy","angry","confused","interested","bored",etc.) aggregated across users for that particular moment in the experiment video playback.
+--Dynamic dashboard data updates in real-time when playback of the experiment video is initialized.
+--The dashboard contains filters for demographics
