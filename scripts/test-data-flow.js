@@ -5,7 +5,7 @@
  * Not in kv_store tables but in user_demographics, user_webcapture, user_sentiment
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@jsr/supabase__supabase-js');
 require('dotenv').config({ path: '.env.local' });
 
 // Initialize Supabase client

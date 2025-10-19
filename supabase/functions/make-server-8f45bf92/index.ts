@@ -274,7 +274,7 @@ app.post("/make-server-8f45bf92/sentiment", async (c) => {
       // Batch insert sentiment data points
       const sentimentRecords = sentimentData.map((dataPoint: any) => ({
         capture_id: finalCaptureId,
-        timestamp_seconds: dataPoint.timestamp || dataPoint.time,
+        timestamp_seconds: dataPoint.timestamp || dataPoint.time || 0,
         emotions: dataPoint.emotions || dataPoint,
       }));
 
@@ -292,7 +292,7 @@ app.post("/make-server-8f45bf92/sentiment", async (c) => {
         .from('user_sentiment')
         .insert({
           capture_id: finalCaptureId,
-          timestamp_seconds: sentimentData.timestamp || 0,
+          timestamp_seconds: sentimentData.timestamp || sentimentData.time || 0,
           emotions: sentimentData.emotions || sentimentData,
         });
 
