@@ -159,7 +159,6 @@ app.post("/make-server-8f45bf92/demographics", rateLimit(10, 60000), async (c) =
     const body = await c.req.json();
     const sanitizedData = validateDemographics(body);
     const { age, race, ethnicity, nationality, gender, otherData } = sanitizedData;
-    const { userId } = body;
 
     // Insert into PostgreSQL - properly store in user_demographics table
     const { data, error } = await supabase
