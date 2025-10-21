@@ -114,8 +114,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
 
         const apiBaseUrl = getApiBaseUrl();
         const [demographicsRes, sentimentRes] = await Promise.all([
-          authenticatedFetch(`${apiBaseUrl}/make-server-8f45bf92/all-demographics`),
-          authenticatedFetch(`${apiBaseUrl}/make-server-8f45bf92/all-sentiment`),
+          authenticatedFetch(`${apiBaseUrl}/server/all-demographics`),
+          authenticatedFetch(`${apiBaseUrl}/server/all-sentiment`),
         ]);
 
         const demographicsData = await demographicsRes.json();

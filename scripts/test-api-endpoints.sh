@@ -9,7 +9,7 @@ echo "=============================================="
 # Get environment variables
 PROJECT_ID="spylqvzwvcjuaqgthxhw"
 ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNweWxxdnp3dmNqdWFxZ3RoeGh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0ODQ3MzgsImV4cCI6MjA3NjA2MDczOH0.2ntz0T5p31sswDYp6RmSK23PnVStC_UC373mbPx3aYk"
-BASE_URL="https://${PROJECT_ID}.supabase.co/functions/v1/make-server-8f45bf92"
+BASE_URL="https://${PROJECT_ID}.supabase.co/functions/v1/server"
 
 echo -e "\n📝 Step 1: Testing Demographics Endpoint..."
 

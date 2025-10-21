@@ -114,12 +114,12 @@ const requireAuth = async (c: any, next: any) => {
 };
 
 // Health check endpoint
-app.get("/make-server-8f45bf92/health", (c) => {
+app.get("/server/health", (c) => {
   return c.json({ status: "ok" });
 });
 
 // Admin login endpoint
-app.post("/make-server-8f45bf92/admin/login", rateLimit(5, 300000), async (c) => {
+app.post("/server/admin/login", rateLimit(5, 300000), async (c) => {
   try {
     const body = await c.req.json();
     const { username, password } = body;
@@ -154,7 +154,7 @@ app.post("/make-server-8f45bf92/admin/login", rateLimit(5, 300000), async (c) =>
 });
 
 // Store user demographics
-app.post("/make-server-8f45bf92/demographics", rateLimit(10, 60000), async (c) => {
+app.post("/server/demographics", rateLimit(10, 60000), async (c) => {
   try {
     const body = await c.req.json();
     const sanitizedData = validateDemographics(body);
@@ -191,7 +191,7 @@ app.post("/make-server-8f45bf92/demographics", rateLimit(10, 60000), async (c) =
 });
 
 // Upload webcam video
-app.post("/make-server-8f45bf92/upload-webcam", async (c) => {
+app.post("/server/upload-webcam", async (c) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get('video') as File;
@@ -244,7 +244,7 @@ app.post("/make-server-8f45bf92/upload-webcam", async (c) => {
 });
 
 // Store sentiment analysis data
-app.post("/make-server-8f45bf92/sentiment", async (c) => {
+app.post("/server/sentiment", async (c) => {
   try {
     const body = await c.req.json();
     const { userId, captureId, sentimentData } = body;
@@ -310,7 +310,7 @@ app.post("/make-server-8f45bf92/sentiment", async (c) => {
 });
 
 // Get all demographics (admin only - with auth check)
-app.get("/make-server-8f45bf92/all-demographics", requireAuth, async (c) => {
+app.get("/server/all-demographics", requireAuth, async (c) => {
   try {
     const { data, error } = await supabase
       .from('user_demographics')
@@ -330,7 +330,7 @@ app.get("/make-server-8f45bf92/all-demographics", requireAuth, async (c) => {
 });
 
 // Get all sentiment data (admin only - with auth check)
-app.get("/make-server-8f45bf92/all-sentiment", requireAuth, async (c) => {
+app.get("/server/all-sentiment", requireAuth, async (c) => {
   try {
     const { data, error } = await supabase
       .from('user_sentiment')
@@ -350,7 +350,7 @@ app.get("/make-server-8f45bf92/all-sentiment", requireAuth, async (c) => {
 });
 
 // Get signed URL for webcam video (admin only - with auth check)
-app.get("/make-server-8f45bf92/webcam-video/:userId", requireAuth, async (c) => {
+app.get("/server/webcam-video/:userId", requireAuth, async (c) => {
   try {
     const userId = c.req.param('userId');
 

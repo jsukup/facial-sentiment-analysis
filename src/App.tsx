@@ -62,7 +62,7 @@ export default function App() {
     try {
       // Send demographic data to API - it will generate a proper uid
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-8f45bf92/demographics`,
+        `https://${projectId}.supabase.co/functions/v1/server/demographics`,
         {
           method: "POST",
           headers: {
@@ -106,7 +106,7 @@ export default function App() {
   const handleExperimentComplete = async (sentimentData: SentimentDataPoint[], captureId?: string) => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-8f45bf92/sentiment`,
+        `https://${projectId}.supabase.co/functions/v1/server/sentiment`,
         {
           method: "POST",
           headers: {

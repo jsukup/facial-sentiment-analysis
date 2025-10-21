@@ -24,7 +24,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
     try {
       // Authenticate with JWT-based admin login
-      const response = await fetch(`${API_BASE_URL}/make-server-8f45bf92/admin/login`, {
+      const response = await fetch(`${API_BASE_URL}/server/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

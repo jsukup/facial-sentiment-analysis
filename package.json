@@ -9,6 +9,7 @@
             "@radix-ui/react-select": "^2.1.6",
             "@radix-ui/react-slider": "^1.2.3",
             "@radix-ui/react-slot": "^1.1.2",
+            "@sentry/react": "^8.0.0",
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
             "face-api.js": "*",
@@ -21,6 +22,7 @@
       },
       "devDependencies": {
             "@playwright/test": "^1.56.1",
+            "@sentry/vite-plugin": "^4.5.0",
             "@testing-library/jest-dom": "^6.9.1",
             "@testing-library/react": "^16.3.0",
             "@testing-library/user-event": "^14.6.1",
@@ -43,9 +45,11 @@
             "build": "vite build",
             "build:production": "NODE_ENV=production vite build",
             "preview": "vite preview",
-            "deploy:prepare": "npm run test && npm run build:production",
+            "deploy:prepare": "npm run validate:env && npm run test:all && npm run build:production",
             "deploy:validate": "node scripts/validate-deployment.js",
             "deploy:vercel": "vercel --prod",
+            "deploy:rollback": "node scripts/rollback-deployment.js",
+            "deploy:emergency-rollback": "node scripts/rollback-deployment.js --emergency",
             "test": "vitest",
             "test:ui": "vitest --ui",
             "test:coverage": "vitest --coverage",
@@ -54,6 +58,9 @@
             "test:all": "npm run test && npm run test:e2e",
             "audit:lighthouse": "node scripts/lighthouse-audit.js",
             "audit:performance": "npm run build && npm run preview & sleep 5 && npm run audit:lighthouse && kill %1",
-            "validate:production": "npm run test:all && npm run audit:lighthouse"
+            "validate:production": "npm run test:all && npm run audit:lighthouse",
+            "validate:env": "node scripts/validate-environment.js",
+            "ci:quality-gates": "npm run validate:env && npm run test:coverage && npm run build:production",
+            "ci:deploy-ready": "npm run ci:quality-gates && npm run deploy:validate"
       }
 }

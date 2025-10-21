@@ -3,7 +3,29 @@
   "buildCommand": "npm run build:production",
   "outputDirectory": "build",
   "framework": "vite",
+  "installCommand": "npm ci --prefer-offline --no-audit",
+  "regions": ["iad1", "sfo1"],
+  "functions": {
+    "app/api/*.js": {
+      "maxDuration": 10
+    }
+  },
+  "redirects": [
+    {
+      "source": "/api/:path*",
+      "destination": "/server/:path*",
+      "permanent": false
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/server/(.*)",
+      "destination": "/server/$1"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
@@ -16,6 +38,10 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Encoding",
+          "value": "gzip"
         }
       ]
     },
@@ -29,11 +55,29 @@
       ]
     },
     {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/service-worker.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob:; frame-ancestors 'none';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
         },
         {
           "key": "X-Frame-Options",
@@ -53,13 +97,30 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains; preload"
         }
       ]
     }
   ],
   "github": {
     "autoDeployment": true,
-    "deploymentEnabled": true
+    "deploymentEnabled": true,
+    "autoJobCancelation": true
+  },
+  "env": {
+    "VITE_BUILD_TARGET": "production",
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "VITE_SUPABASE_PROJECT_ID": "@vite_supabase_project_id",
+      "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key",
+      "VITE_SENTRY_DSN": "@vite_sentry_dsn",
+      "VITE_BUILD_TARGET": "production"
+    }
   }
 }
