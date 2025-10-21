@@ -1,6 +1,42 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Mock face-api.js to avoid browser dependency issues in tests
+vi.mock('face-api.js', () => ({
+  nets: {
+    faceRecognitionNet: {
+      loadFromUri: vi.fn().mockResolvedValue(true)
+    },
+    faceLandmark68Net: {
+      loadFromUri: vi.fn().mockResolvedValue(true)
+    },
+    ssdMobilenetv1: {
+      loadFromUri: vi.fn().mockResolvedValue(true)
+    },
+    faceExpressionNet: {
+      loadFromUri: vi.fn().mockResolvedValue(true)
+    }
+  },
+  detectAllFaces: vi.fn().mockResolvedValue([
+    {
+      expressions: {
+        neutral: 0.8,
+        happy: 0.1,
+        sad: 0.05,
+        angry: 0.02,
+        fearful: 0.01,
+        disgusted: 0.01,
+        surprised: 0.01
+      }
+    }
+  ]),
+  matchDimensions: vi.fn(),
+  draw: {
+    drawDetections: vi.fn(),
+    drawFaceExpressions: vi.fn()
+  }
+}))
+
 // Mock MediaDevices API for webcam testing
 Object.defineProperty(window, 'navigator', {
   writable: true,
