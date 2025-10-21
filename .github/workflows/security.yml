@@ -66,10 +66,18 @@ jobs:
           
       - name: 'TruffleHog Secret Scan'
         uses: trufflesecurity/trufflehog@main
+        if: github.event_name == 'pull_request'
         with:
           path: ./
           base: main
           head: HEAD
+          extra_args: --debug --only-verified
+          
+      - name: 'TruffleHog Secret Scan (Push)'
+        uses: trufflesecurity/trufflehog@main
+        if: github.event_name == 'push'
+        with:
+          path: ./
           extra_args: --debug --only-verified
 
   code-security:
