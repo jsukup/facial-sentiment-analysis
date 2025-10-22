@@ -37,5 +37,12 @@ Thumbs.db
 *.temp
 .vercel
 
+# Test coverage and reports
+coverage/
+playwright-report/
+test-results/
+*.lcov
+.nyc_output/
+
 # Serena memories (local development)
 .serena/
