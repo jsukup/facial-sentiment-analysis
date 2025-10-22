@@ -502,7 +502,11 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
           </CardContent>
         </Card>
 
-        {/* Sentiment Analysis Charts - Only show if above privacy threshold */}
+        {/* Real-time Monitoring Section */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Real-time Monitoring</h2>
+        </div>
+        
         {!showPrivacyWarning && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>

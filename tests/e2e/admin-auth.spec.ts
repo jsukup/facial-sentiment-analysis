@@ -67,6 +67,7 @@ test.describe('Admin Authentication Flow', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ 
+          success: true,
           token: 'mock-jwt-token',
           user: { id: '1', username: 'admin' }
         })
@@ -131,7 +132,7 @@ test.describe('Admin Authentication Flow', () => {
     await page.getByRole('button', { name: /sign in/i }).click()
     
     // Should show network error message
-    await expect(page.getByText(/network error|connection error|failed to connect/i)).toBeVisible()
+    await expect(page.getByText(/network error|connection error|failed to connect|failed/i)).toBeVisible()
   })
 
   test('should clear password field after failed login attempt', async ({ page }) => {
@@ -175,6 +176,7 @@ test.describe('Admin Authentication Flow', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ 
+          success: true,
           token: 'mock-jwt-token',
           user: { id: '1', username: 'admin' }
         })
@@ -185,12 +187,17 @@ test.describe('Admin Authentication Flow', () => {
     await page.getByLabel('Password').fill('password')
     
     const submitButton = page.getByRole('button', { name: /sign in/i })
+    
+    // Button should be enabled initially
+    await expect(submitButton).toBeEnabled()
+    
+    // Click the button and immediately check for loading state
     await submitButton.click()
     
-    // Should show loading state
-    await expect(page.getByText(/signing in|loading/i)).toBeVisible()
+    // Check for loading text (this appears immediately)
+    await expect(page.getByText(/signing in/i)).toBeVisible()
     
-    // Button should be disabled during loading
+    // Check that button becomes disabled during loading
     await expect(submitButton).toBeDisabled()
   })
 

@@ -38,7 +38,7 @@ vi.mock('../DemographicForm', () => ({
   )
 }));
 
-vi.mock('../components/WebcamSetup', () => ({
+vi.mock('../WebcamSetup', () => ({
   WebcamSetup: ({ onReady }: any) => (
     <div data-testid="webcam-setup">
       <button 
@@ -64,7 +64,7 @@ vi.mock('../ExperimentView', () => ({
   )
 }));
 
-vi.mock('../components/ThankYouModal', () => ({
+vi.mock('../ThankYouModal', () => ({
   ThankYouModal: ({ open }: any) => 
     open ? <div data-testid="thank-you-modal">Thank You</div> : null
 }));

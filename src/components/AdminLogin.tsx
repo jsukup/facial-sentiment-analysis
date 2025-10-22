@@ -39,12 +39,14 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
       if (!response.ok) {
         setError(data.error || 'Login failed');
+        setPassword(''); // Clear password field after failed login
         setLoading(false);
         return;
       }
 
       if (!data.success || !data.token) {
         setError('Authentication failed - no token received');
+        setPassword(''); // Clear password field after failed login
         setLoading(false);
         return;
       }
@@ -57,6 +59,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       onLoginSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error occurred");
+      setPassword(''); // Clear password field after network error
       setLoading(false);
     }
   };

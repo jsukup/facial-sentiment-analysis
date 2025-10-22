@@ -15,7 +15,8 @@ export const getAdminToken = (): string | null => {
   }
   
   // Check if token is expired
-  if (Date.now() > parseInt(expiry)) {
+  const expiryTime = parseInt(expiry);
+  if (isNaN(expiryTime) || Date.now() > expiryTime) {
     clearAdminToken();
     return null;
   }
