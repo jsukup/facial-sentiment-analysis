@@ -9,7 +9,7 @@ interface ThankYouModalProps {
 
 export function ThankYouModal({ open, onClose }: ThankYouModalProps) {
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
@@ -37,13 +37,11 @@ export function ThankYouModal({ open, onClose }: ThankYouModalProps) {
           </p>
         </div>
         
-        {onClose && (
-          <DialogFooter>
-            <Button onClick={onClose} className="w-full">
-              Close
-            </Button>
-          </DialogFooter>
-        )}
+        <DialogFooter>
+          <Button onClick={onClose || (() => window.location.reload())} className="w-full">
+            Close
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

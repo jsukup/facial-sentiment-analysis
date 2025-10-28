@@ -10,9 +10,12 @@
             "@radix-ui/react-slider": "^1.2.3",
             "@radix-ui/react-slot": "^1.1.2",
             "@sentry/react": "^8.0.0",
+            "@tensorflow/tfjs-backend-cpu": "^4.22.0",
+            "@tensorflow/tfjs-backend-webgl": "^4.22.0",
+            "@tensorflow/tfjs-core": "^4.22.0",
+            "@vladmandic/face-api": "^1.7.15",
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
-            "face-api.js": "*",
             "hono": "*",
             "lucide-react": "^0.487.0",
             "react": "^18.3.1",
@@ -31,6 +34,7 @@
             "@types/node": "^20.10.0",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "@vitest/coverage-v8": "^3.2.4",
+            "axe-playwright": "^2.2.2",
             "chrome-launcher": "^1.2.1",
             "happy-dom": "^20.0.7",
             "jsdom": "^27.0.1",
@@ -76,6 +80,6 @@
       },
       "overrides": {
             "node-fetch": "^3.3.2",
-            "@tensorflow/tfjs-core": "^4.20.0"
+            "@tensorflow/tfjs-core": "^4.22.0"
       }
 }

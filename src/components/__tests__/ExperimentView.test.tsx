@@ -24,16 +24,16 @@ vi.mock('lucide-react', () => ({
   Pause: () => <div data-testid="pause-icon" />
 }));
 
-// Mock face-api.js
+// Mock @vladmandic/face-api
 const mockFaceapi = {
   detectSingleFace: vi.fn(),
   TinyFaceDetectorOptions: vi.fn().mockImplementation(() => ({})),
   withFaceExpressions: vi.fn()
 };
-vi.mock('face-api.js', () => mockFaceapi);
+vi.mock('@vladmandic/face-api', () => mockFaceapi);
 
 // Mock the face-api loader
-vi.mock('../utils/faceapi-loader', () => ({
+vi.mock('../../utils/faceapi-loader', () => ({
   loadFaceApiModels: vi.fn().mockResolvedValue(undefined)
 }));
 

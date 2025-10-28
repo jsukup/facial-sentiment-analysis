@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { loadFaceApiModels, areFaceApiModelsLoaded } from '../../utils/faceapi-loader';
 
-// Mock face-api module
-vi.mock('face-api.js', () => ({
+// Mock @vladmandic/face-api module
+vi.mock('@vladmandic/face-api', () => ({
   nets: {
     tinyFaceDetector: {
       isLoaded: false,
@@ -30,7 +30,7 @@ describe('Face API Loader Tests', () => {
     vi.resetModules();
     
     // Import the mocked module and reset implementations
-    const faceapi = await import('face-api.js');
+    const faceapi = await import('@vladmandic/face-api');
     // Reset isLoaded state
     faceapi.nets.tinyFaceDetector.isLoaded = false;
     faceapi.nets.faceExpressionNet.isLoaded = false;
@@ -41,7 +41,7 @@ describe('Face API Loader Tests', () => {
 
   describe('loadFaceApiModels', () => {
     it('loads all required models successfully', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels } = await import('../../utils/faceapi-loader');
       
       await loadFaceApiModels();
@@ -51,7 +51,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('handles model loading failures gracefully', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels } = await import('../../utils/faceapi-loader');
       const error = new Error('Model loading failed');
       faceapi.nets.tinyFaceDetector.loadFromUri.mockRejectedValue(error);
@@ -60,7 +60,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('handles partial model loading failures', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels } = await import('../../utils/faceapi-loader');
       faceapi.nets.faceExpressionNet.loadFromUri.mockRejectedValue(new Error('Expression model failed'));
 
@@ -68,7 +68,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('handles network errors during model loading', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels } = await import('../../utils/faceapi-loader');
       const networkError = new Error('Network request failed');
       faceapi.nets.tinyFaceDetector.loadFromUri.mockRejectedValue(networkError);
@@ -77,7 +77,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('skips loading when models are already loaded', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels } = await import('../../utils/faceapi-loader');
       // Set models as already loaded
       faceapi.nets.tinyFaceDetector.isLoaded = true;
@@ -98,7 +98,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('returns true after models are successfully loaded', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels, areFaceApiModelsLoaded } = await import('../../utils/faceapi-loader');
       
       await loadFaceApiModels();
@@ -107,7 +107,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('returns false after failed model loading', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels, areFaceApiModelsLoaded } = await import('../../utils/faceapi-loader');
       faceapi.nets.tinyFaceDetector.loadFromUri.mockRejectedValue(new Error('Loading failed'));
 
@@ -136,7 +136,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('handles repeated loading calls efficiently', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels, areFaceApiModelsLoaded } = await import('../../utils/faceapi-loader');
       
       // First load
@@ -155,7 +155,7 @@ describe('Face API Loader Tests', () => {
 
   describe('Edge Cases', () => {
     it('handles concurrent loading calls', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels, areFaceApiModelsLoaded } = await import('../../utils/faceapi-loader');
       
       // Start multiple loading operations concurrently
@@ -172,7 +172,7 @@ describe('Face API Loader Tests', () => {
     });
 
     it('resets state properly after loading failure', async () => {
-      const faceapi = await import('face-api.js');
+      const faceapi = await import('@vladmandic/face-api');
       const { loadFaceApiModels, areFaceApiModelsLoaded } = await import('../../utils/faceapi-loader');
       const error = new Error('Loading failed');
       faceapi.nets.tinyFaceDetector.loadFromUri.mockRejectedValueOnce(error);

@@ -54,16 +54,16 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
   useEffect(() => {
     initWebcam();
 
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
+    // Don't cleanup the stream when component unmounts - it will be used in ExperimentView
+    // The stream will be cleaned up by the App component when experiment completes
   }, []);
 
   const handleReady = () => {
     if (stream) {
+      console.log("📤 WebcamSetup: Passing stream to App");
       onReady(stream);
+    } else {
+      console.error("❌ WebcamSetup: No stream available to pass");
     }
   };
 

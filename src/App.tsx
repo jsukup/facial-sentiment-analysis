@@ -95,6 +95,7 @@ export default function App() {
   };
 
   const handleWebcamReady = (stream: MediaStream) => {
+    console.log("📹 App: Received webcam stream from WebcamSetup");
     setWebcamStream(stream);
     setAppState("experiment-details");
   };
@@ -128,15 +129,39 @@ export default function App() {
         logUserAction("sentiment_data_submitted", userId, { dataPointCount: sentimentData.length });
       }
 
-      // Stop webcam stream
+      // Stop webcam stream and cleanup
       if (webcamStream) {
-        webcamStream.getTracks().forEach(track => track.stop());
+        console.log("🛑 Stopping webcam stream after experiment complete");
+        webcamStream.getTracks().forEach(track => {
+          track.stop();
+          console.log(`Stopped track: ${track.kind} - ${track.label}`);
+        });
+        setWebcamStream(null);
       }
 
       setAppState("thank-you");
     } catch (error) {
       logError("Error submitting sentiment data", error as Error, "App", userId);
+      // Still cleanup stream on error
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        setWebcamStream(null);
+      }
     }
+  };
+
+  const handleThankYouClose = () => {
+    // Cleanup any remaining webcam stream
+    if (webcamStream) {
+      console.log("🛑 Cleaning up webcam stream on session end");
+      webcamStream.getTracks().forEach(track => track.stop());
+    }
+    
+    // Reset app state to allow new participants
+    setAppState("mode-selection");
+    setUserId("");
+    setWebcamStream(null);
+    setPrivacyAccepted(false);
   };
 
   const renderContent = () => {
@@ -212,7 +237,7 @@ export default function App() {
         ) : null;
 
       case "thank-you":
-        return <ThankYouModal open={true} />;
+        return <ThankYouModal open={true} onClose={handleThankYouClose} />;
 
       case "admin-login":
         return (

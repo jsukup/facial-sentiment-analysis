@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
-// Mock face-api.js to avoid browser dependency issues in tests
-vi.mock('face-api.js', () => ({
+// Mock @vladmandic/face-api to avoid browser dependency issues in tests
+vi.mock('@vladmandic/face-api', () => ({
   nets: {
     faceRecognitionNet: {
       loadFromUri: vi.fn().mockResolvedValue(true)

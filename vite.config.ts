@@ -47,7 +47,7 @@ export default defineConfig({
         output: {
           manualChunks: {
             // Vendor libraries - large dependencies
-            'vendor-face': ['face-api.js'],
+            'vendor-face': ['@vladmandic/face-api'],
             'vendor-ui': [
               '@radix-ui/react-dialog',
               '@radix-ui/react-select',

@@ -15,22 +15,43 @@ const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD') || 'change-this-password';
 
 // Create Supabase client
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_URL') ?? 'https://spylqvzwvcjuaqgthxhw.supabase.co',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
 // Initialize storage bucket on startup
 const BUCKET_NAME = 'make-8f45bf92-user-webcapture';
 (async () => {
-  const { data: buckets } = await supabase.storage.listBuckets();
-  const bucketExists = buckets?.some(bucket => bucket.name === BUCKET_NAME);
-  if (!bucketExists) {
-    const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
-      public: false,
-      fileSizeLimit: 104857600, // 100MB
-    });
-    if (error) console.log(`Bucket creation error: ${error.message}`);
-    else console.log(`Created bucket: ${BUCKET_NAME}`);
+  try {
+    console.log('Checking storage buckets...');
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.log(`Error listing buckets: ${listError.message}`);
+      return;
+    }
+    
+    console.log('Existing buckets:', buckets?.map(b => b.name) || []);
+    const bucketExists = buckets?.some(bucket => bucket.name === BUCKET_NAME);
+    
+    if (!bucketExists) {
+      console.log(`Creating bucket: ${BUCKET_NAME}`);
+      const { data: bucketData, error } = await supabase.storage.createBucket(BUCKET_NAME, {
+        public: false,
+        fileSizeLimit: 52428800, // 50MB (reduced from 100MB)
+      });
+      
+      if (error) {
+        console.log(`Bucket creation error: ${error.message}`);
+        console.log('Bucket creation error details:', error);
+      } else {
+        console.log(`Successfully created bucket: ${BUCKET_NAME}`, bucketData);
+      }
+    } else {
+      console.log(`Bucket ${BUCKET_NAME} already exists`);
+    }
+  } catch (err) {
+    console.log('Storage initialization error:', err);
   }
 })();
 
@@ -43,8 +64,8 @@ app.use(
   cors({
     origin: Deno.env.get('NODE_ENV') === 'production' 
       ? [Deno.env.get('FRONTEND_URL') || 'https://facial-sentiment.vercel.app']
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:5173'],
-    allowHeaders: ["Content-Type", "Authorization"],
+      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:4173', 'http://localhost:5173'],
+    allowHeaders: ["Content-Type", "Authorization", "X-Admin-Token"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
@@ -96,26 +117,117 @@ const rateLimit = (maxRequests: number, windowMs: number) => {
 
 // Admin authentication middleware
 const requireAuth = async (c: any, next: any) => {
-  const authHeader = c.req.header('Authorization');
+  // For protected endpoints, expect JWT token in X-Admin-Token header
+  // Authorization header is reserved for Supabase anon key
+  const adminToken = c.req.header('X-Admin-Token');
   
-  if (!authHeader?.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized - Missing or invalid token' }, 401);
+  if (!adminToken) {
+    return c.json({ error: 'Unauthorized - Missing admin token' }, 401);
   }
   
-  const token = authHeader.split(' ')[1];
-  
   try {
-    const payload = await verify(token, JWT_SECRET);
+    const payload = await verify(adminToken, JWT_SECRET);
     c.set('user', payload);
     await next();
   } catch (error) {
-    return c.json({ error: 'Unauthorized - Invalid token' }, 401);
+    return c.json({ error: 'Unauthorized - Invalid admin token' }, 401);
   }
 };
 
 // Health check endpoint
 app.get("/server/health", (c) => {
   return c.json({ status: "ok" });
+});
+
+// Admin-only endpoint to clean all user data
+app.delete("/server/admin/cleanup-user-data", requireAuth, async (c) => {
+  try {
+    console.log('Starting user data cleanup...');
+    
+    // Count existing records before cleanup
+    const { count: sentimentCount } = await supabase
+      .from('user_sentiment')
+      .select('*', { count: 'exact', head: true });
+      
+    const { count: webcaptureCount } = await supabase
+      .from('user_webcapture')
+      .select('*', { count: 'exact', head: true });
+      
+    const { count: demographicsCount } = await supabase
+      .from('user_demographics')
+      .select('*', { count: 'exact', head: true });
+    
+    console.log(`Pre-cleanup counts: demographics=${demographicsCount}, webcapture=${webcaptureCount}, sentiment=${sentimentCount}`);
+    
+    // Delete in correct order to respect foreign key constraints
+    
+    // Step 1: Delete sentiment data (leaf table)
+    const { error: sentimentError } = await supabase
+      .from('user_sentiment')
+      .delete()
+      .neq('sentiment_id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+    
+    if (sentimentError) {
+      console.log(`Error deleting sentiment data: ${sentimentError.message}`);
+      return c.json({ error: `Failed to delete sentiment data: ${sentimentError.message}` }, 500);
+    }
+    
+    // Step 2: Delete webcapture data (middle table)
+    const { error: webcaptureError } = await supabase
+      .from('user_webcapture')
+      .delete()
+      .neq('capture_id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+    
+    if (webcaptureError) {
+      console.log(`Error deleting webcapture data: ${webcaptureError.message}`);
+      return c.json({ error: `Failed to delete webcapture data: ${webcaptureError.message}` }, 500);
+    }
+    
+    // Step 3: Delete demographics data (root table)
+    const { error: demographicsError } = await supabase
+      .from('user_demographics')
+      .delete()
+      .neq('uid', '00000000-0000-0000-0000-000000000000'); // Delete all records
+    
+    if (demographicsError) {
+      console.log(`Error deleting demographics data: ${demographicsError.message}`);
+      return c.json({ error: `Failed to delete demographics data: ${demographicsError.message}` }, 500);
+    }
+    
+    // Verify cleanup
+    const { count: finalSentimentCount } = await supabase
+      .from('user_sentiment')
+      .select('*', { count: 'exact', head: true });
+      
+    const { count: finalWebcaptureCount } = await supabase
+      .from('user_webcapture')
+      .select('*', { count: 'exact', head: true });
+      
+    const { count: finalDemographicsCount } = await supabase
+      .from('user_demographics')
+      .select('*', { count: 'exact', head: true });
+    
+    console.log(`Post-cleanup counts: demographics=${finalDemographicsCount}, webcapture=${finalWebcaptureCount}, sentiment=${finalSentimentCount}`);
+    
+    return c.json({ 
+      success: true,
+      message: 'All user data has been successfully removed',
+      deletedCounts: {
+        demographics: demographicsCount,
+        webcapture: webcaptureCount,
+        sentiment: sentimentCount
+      },
+      finalCounts: {
+        demographics: finalDemographicsCount,
+        webcapture: finalWebcaptureCount,
+        sentiment: finalSentimentCount
+      }
+    });
+    
+  } catch (error) {
+    console.log(`Error during user data cleanup: ${error}`);
+    return c.json({ error: `Cleanup failed: ${error.message}` }, 500);
+  }
 });
 
 // Admin login endpoint
@@ -196,10 +308,59 @@ app.post("/server/upload-webcam", async (c) => {
     const formData = await c.req.formData();
     const file = formData.get('video') as File;
     const userId = formData.get('userId') as string;
-    const experimentId = formData.get('experimentId') as string;
+    const experimentIdValue = formData.get('experimentId');
+    const experimentId = experimentIdValue && experimentIdValue !== '' ? experimentIdValue as string : null;
+    const durationValue = formData.get('duration') as string;
+    const duration = durationValue && durationValue !== 'undefined' && durationValue !== 'null' 
+      ? parseFloat(durationValue) 
+      : null;
 
     if (!file || !userId) {
       return c.json({ error: 'video file and userId are required' }, 400);
+    }
+    
+    // Enhanced logging for debugging duration issues
+    console.log(`📹 Upload webcam request:`, {
+      userId: userId,
+      experimentId: experimentId || 'null',
+      duration: duration,
+      durationValue: durationValue,
+      durationIsValid: !isNaN(duration) && duration !== null,
+      durationInSeconds: duration,
+      requestTimestamp: new Date().toISOString()
+    });
+    
+    // If no experimentId provided, try to get the default active experiment
+    let finalExperimentId = experimentId;
+    if (!experimentId) {
+      const { data: experiments } = await supabase
+        .from('experiment_videos')
+        .select('experiment_id')
+        .eq('is_active', true)
+        .limit(1);
+      
+      if (experiments && experiments.length > 0) {
+        finalExperimentId = experiments[0].experiment_id;
+        console.log(`Using default experiment: ${finalExperimentId}`);
+      }
+    }
+
+    // Ensure bucket exists before upload
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(bucket => bucket.name === BUCKET_NAME);
+    
+    if (!bucketExists) {
+      console.log(`Creating bucket on-demand: ${BUCKET_NAME}`);
+      const { error: bucketError } = await supabase.storage.createBucket(BUCKET_NAME, {
+        public: false,
+        fileSizeLimit: 52428800, // 50MB (reduced from 100MB)
+      });
+      
+      if (bucketError) {
+        console.log(`Bucket creation failed: ${bucketError.message}`);
+        return c.json({ error: `Failed to create storage bucket: ${bucketError.message}` }, 500);
+      }
+      console.log(`Successfully created bucket: ${BUCKET_NAME}`);
     }
 
     const fileName = `${userId}_${Date.now()}.webm`;
@@ -218,25 +379,88 @@ app.post("/server/upload-webcam", async (c) => {
       return c.json({ error: `Upload failed: ${error.message}` }, 500);
     }
 
+    // Enhanced validation before database insert
+    const durationForDatabase = duration !== null && !isNaN(duration) && duration > 0 ? duration : null;
+    const durationValidationResult = {
+      originalDuration: duration,
+      processedDuration: durationForDatabase,
+      isValid: durationForDatabase !== null,
+      validationReason: durationForDatabase === null ? 
+        (duration === null ? 'null_input' : 
+         isNaN(duration) ? 'not_a_number' : 
+         duration <= 0 ? 'invalid_range' : 'unknown') : 'valid'
+    };
+    
     // Store metadata in PostgreSQL - use correct column names
+    console.log(`💾 Storing webcapture metadata:`, {
+      userId: userId,
+      experiment_id: finalExperimentId || 'null',
+      duration_seconds: durationForDatabase,
+      validation: durationValidationResult,
+      timestamp: new Date().toISOString()
+    });
+    
+    const insertData = {
+      user_uid: userId, // Changed from 'uid' to 'user_uid'
+      experiment_id: finalExperimentId || null, // Use the resolved experiment ID
+      video_path: data.path, // Changed from 'video_storage_path' to 'video_path'
+      video_url: `${BUCKET_NAME}/${data.path}`,
+      duration_seconds: durationForDatabase, // Use validated duration value
+    };
+    
+    console.log('Webcapture insert data:', JSON.stringify(insertData, null, 2));
+    
     const { data: captureData, error: dbError } = await supabase
       .from('user_webcapture')
-      .insert({
-        user_uid: userId, // Changed from 'uid' to 'user_uid'
-        experiment_id: experimentId || null, // Add experiment reference
-        video_path: data.path, // Changed from 'video_storage_path' to 'video_path'
-        video_url: `${BUCKET_NAME}/${data.path}`,
-        duration_seconds: null, // Will be updated when known
-      })
-      .select('capture_id')
+      .insert(insertData)
+      .select('capture_id, experiment_id')
       .single();
 
     if (dbError) {
-      console.log(`Database error: ${dbError.message}`);
+      console.log(`❌ Database error: ${dbError.message}`);
+      console.log(`❌ Failed insert data:`, JSON.stringify(insertData, null, 2));
       return c.json({ error: `Database error: ${dbError.message}` }, 500);
     }
 
-    return c.json({ success: true, fileName, path: data.path, captureId: captureData.capture_id });
+    // Enhanced logging for successful storage with duration verification
+    console.log(`✅ Webcapture stored successfully:`, {
+      captureId: captureData.capture_id,
+      storedExperimentId: captureData.experiment_id,
+      requestedExperimentId: finalExperimentId,
+      experimentIdMatches: captureData.experiment_id === finalExperimentId,
+      durationSent: durationForDatabase,
+      durationValidation: durationValidationResult,
+      insertSuccess: true,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Query back the stored record to verify duration_seconds was actually saved
+    const { data: verificationData, error: verifyError } = await supabase
+      .from('user_webcapture')
+      .select('capture_id, duration_seconds, user_uid, experiment_id')
+      .eq('capture_id', captureData.capture_id)
+      .single();
+    
+    if (verifyError) {
+      console.log(`⚠️ Could not verify stored duration: ${verifyError.message}`);
+    } else {
+      console.log(`🔍 Duration verification:`, {
+        captureId: verificationData.capture_id,
+        storedDurationSeconds: verificationData.duration_seconds,
+        sentDurationSeconds: durationForDatabase,
+        durationMatches: verificationData.duration_seconds === durationForDatabase,
+        durationIsNull: verificationData.duration_seconds === null,
+        verificationTimestamp: new Date().toISOString()
+      });
+    }
+
+    return c.json({ 
+      success: true, 
+      fileName, 
+      path: data.path, 
+      captureId: captureData.capture_id,
+      experimentId: captureData.experiment_id // Include in response for debugging
+    });
   } catch (error) {
     console.log(`Error uploading webcam video: ${error}`);
     return c.json({ error: `Failed to upload video: ${error.message}` }, 500);
@@ -253,9 +477,12 @@ app.post("/server/sentiment", async (c) => {
       return c.json({ error: 'userId and sentimentData are required' }, 400);
     }
 
-    // If we don't have a captureId, try to find the most recent one for this user
+    // Handle captureId for early submissions
     let finalCaptureId = captureId;
+    
+    // For early submissions (manual stop), captureId might be null
     if (!finalCaptureId) {
+      // Try to find the most recent capture for this user
       const { data: captureData, error: captureError } = await supabase
         .from('user_webcapture')
         .select('capture_id')
@@ -266,40 +493,123 @@ app.post("/server/sentiment", async (c) => {
       
       if (!captureError && captureData) {
         finalCaptureId = captureData.capture_id;
+        console.log(`Using existing capture ID for early submission: ${finalCaptureId}`);
+      } else {
+        // For early submissions without video capture, store sentiment data without capture reference
+        console.log(`Early submission without video capture for user: ${userId}`);
       }
     }
 
     // Store sentiment data points properly
+    console.log(`Attempting to store sentiment data for user: ${userId}`);
+    console.log(`Final capture ID: ${finalCaptureId}`);
+    console.log(`Sentiment data array length: ${Array.isArray(sentimentData) ? sentimentData.length : 'not array'}`);
+    
     if (Array.isArray(sentimentData)) {
       // Batch insert sentiment data points
-      const sentimentRecords = sentimentData.map((dataPoint: any) => ({
-        capture_id: finalCaptureId,
-        timestamp_seconds: dataPoint.timestamp || dataPoint.time || 0,
-        emotions: dataPoint.emotions || dataPoint,
-      }));
+      const sentimentRecords = sentimentData.map((dataPoint: any) => {
+        const emotions = dataPoint.expressions || dataPoint.emotions || dataPoint;
+        
+        // Convert emotion strings to numbers if needed
+        const processedEmotions: any = {};
+        if (emotions && typeof emotions === 'object') {
+          for (const [key, value] of Object.entries(emotions)) {
+            // Convert string values to numbers, keep numbers as-is
+            processedEmotions[key] = typeof value === 'string' ? parseFloat(value as string) : value;
+          }
+        } else {
+          processedEmotions = emotions;
+        }
+        
+        return {
+          capture_id: finalCaptureId,
+          timestamp_seconds: dataPoint.timestamp || dataPoint.time || 0,
+          emotions: processedEmotions,
+        };
+      });
 
-      const { error } = await supabase
+      console.log(`Prepared ${sentimentRecords.length} sentiment records for insertion:`, JSON.stringify(sentimentRecords[0], null, 2));
+
+      const { data: insertResult, error } = await supabase
         .from('user_sentiment')
-        .insert(sentimentRecords);
+        .insert(sentimentRecords)
+        .select();
 
       if (error) {
-        console.log(`Database error: ${error.message}`);
+        console.log(`❌ Database error: ${error.message}`);
+        console.log(`❌ Error details:`, JSON.stringify(error, null, 2));
+        console.log(`❌ Failed records sample:`, JSON.stringify(sentimentRecords.slice(0, 2), null, 2));
         return c.json({ error: `Failed to store sentiment: ${error.message}` }, 500);
+      } else {
+        console.log(`✅ Successfully inserted ${insertResult?.length || 0} sentiment records`);
+        console.log(`✅ Insert result sample:`, JSON.stringify(insertResult?.slice(0, 2) || [], null, 2));
+        console.log(`✅ Total sentiment records processed: ${sentimentRecords.length}`);
+        
+        // Verify the insertion by counting total records
+        const { count: totalCount } = await supabase
+          .from('user_sentiment')
+          .select('*', { count: 'exact', head: true });
+        console.log(`✅ Total sentiment records in database: ${totalCount}`);
+        
+        // Additional verification: Check recent records for this user/session
+        const { data: recentRecords, error: verifyError } = await supabase
+          .from('user_sentiment')
+          .select('sentiment_id, capture_id, timestamp_seconds, emotions, created_at')
+          .order('created_at', { ascending: false })
+          .limit(3);
+          
+        if (verifyError) {
+          console.log(`⚠️ Verification query failed: ${verifyError.message}`);
+        } else {
+          console.log(`✅ Recent sentiment records verification:`, JSON.stringify(recentRecords, null, 2));
+        }
+        
+        // Check specifically for records with this capture_id if available
+        if (finalCaptureId) {
+          const { data: captureSpecific, count: captureCount } = await supabase
+            .from('user_sentiment')
+            .select('*', { count: 'exact' })
+            .eq('capture_id', finalCaptureId);
+            
+          console.log(`✅ Records for capture_id ${finalCaptureId}: ${captureCount} records`);
+          if (captureSpecific && captureSpecific.length > 0) {
+            console.log(`✅ Sample record for this capture:`, JSON.stringify(captureSpecific[0], null, 2));
+          }
+        }
       }
     } else {
       // Single sentiment data point
-      const { error } = await supabase
+      const singleRecord = {
+        capture_id: finalCaptureId,
+        timestamp_seconds: sentimentData.timestamp || sentimentData.time || 0,
+        emotions: sentimentData.expressions || sentimentData.emotions || sentimentData,
+      };
+      
+      console.log(`Inserting single sentiment record:`, JSON.stringify(singleRecord, null, 2));
+
+      const { data: insertResult, error } = await supabase
         .from('user_sentiment')
-        .insert({
-          capture_id: finalCaptureId,
-          timestamp_seconds: sentimentData.timestamp || sentimentData.time || 0,
-          emotions: sentimentData.emotions || sentimentData,
-        });
+        .insert(singleRecord)
+        .select();
 
       if (error) {
         console.log(`Database error: ${error.message}`);
+        console.log(`Error details:`, JSON.stringify(error, null, 2));
         return c.json({ error: `Failed to store sentiment: ${error.message}` }, 500);
+      } else {
+        console.log(`Successfully inserted single sentiment record:`, JSON.stringify(insertResult, null, 2));
       }
+    }
+    
+    // Verify the insertion by counting records
+    const { count: verifyCount, error: countError } = await supabase
+      .from('user_sentiment')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      console.log(`Could not verify insertion: ${countError.message}`);
+    } else {
+      console.log(`Total sentiment records after insertion: ${verifyCount}`);
     }
 
     return c.json({ success: true, userId, captureId: finalCaptureId });
@@ -322,27 +632,228 @@ app.get("/server/all-demographics", requireAuth, async (c) => {
       return c.json({ error: `Failed to fetch demographics: ${error.message}` }, 500);
     }
 
-    return c.json({ demographics: data });
+    // Transform data to match client expectations
+    const transformedData = data.map(record => ({
+      value: {
+        userId: record.uid, // Map uid to userId
+        age: record.age,
+        gender: record.gender,
+        race: record.race,
+        ethnicity: record.ethnicity,
+        nationality: record.nationality
+      }
+    }));
+
+    return c.json({ demographics: transformedData });
   } catch (error) {
     console.log(`Error fetching demographics: ${error}`);
     return c.json({ error: `Failed to fetch demographics: ${error.message}` }, 500);
   }
 });
 
+// Fix RLS policies (temporary endpoint for debugging)
+app.post("/server/fix-rls", async (c) => {
+  try {
+    console.log('Applying RLS policy fixes...');
+    
+    // Apply RLS policies using raw SQL
+    const sqlCommands = [
+      'ALTER TABLE user_sentiment ENABLE ROW LEVEL SECURITY;',
+      'DROP POLICY IF EXISTS "Public can insert sentiment" ON user_sentiment;',
+      'DROP POLICY IF EXISTS "Authenticated users can insert sentiment" ON user_sentiment;',
+      'DROP POLICY IF EXISTS "Anonymous users can insert sentiment" ON user_sentiment;',
+      `CREATE POLICY "Anonymous users can insert sentiment"
+        ON user_sentiment FOR INSERT
+        TO anon
+        WITH CHECK (true);`,
+      `CREATE POLICY "Authenticated users can insert sentiment"
+        ON user_sentiment FOR INSERT
+        TO authenticated
+        WITH CHECK (true);`,
+      'GRANT INSERT ON user_sentiment TO anon;',
+      'GRANT USAGE ON SCHEMA public TO anon;',
+      'GRANT INSERT ON user_sentiment TO authenticated;',
+      'GRANT SELECT ON user_sentiment TO authenticated;'
+    ];
+    
+    for (const sql of sqlCommands) {
+      console.log(`Executing: ${sql}`);
+      const { error } = await supabase.rpc('exec_sql', { sql });
+      if (error) {
+        console.log(`SQL Error: ${error.message}`);
+        return c.json({ error: `Failed to execute SQL: ${error.message}` }, 500);
+      }
+    }
+    
+    return c.json({ success: true, message: 'RLS policies applied successfully' });
+  } catch (error) {
+    console.log(`Error applying RLS fixes: ${error}`);
+    return c.json({ error: `Failed to apply RLS fixes: ${error.message}` }, 500);
+  }
+});
+
+// Debug endpoint to check raw sentiment data (admin only)
+app.get("/server/sentiment-debug", requireAuth, async (c) => {
+  try {
+    // First, check if ANY sentiment data exists
+    const { data: rawSentiment, error: rawError, count: totalCount } = await supabase
+      .from('user_sentiment')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    console.log(`📊 Raw sentiment data query: ${totalCount} total records`);
+    
+    if (rawError) {
+      console.log(`❌ Raw sentiment query error: ${rawError.message}`);
+      return c.json({ 
+        error: rawError.message,
+        totalCount: 0,
+        rawData: [],
+        joinedData: []
+      });
+    }
+
+    // Then try the original complex query
+    const { data: joinedData, error: joinError } = await supabase
+      .from('user_sentiment')
+      .select(`
+        *,
+        user_webcapture!inner(
+          user_uid,
+          user_demographics!inner(uid)
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    console.log(`📊 Joined sentiment data: ${joinedData?.length || 0} records`);
+    
+    if (joinError) {
+      console.log(`❌ Joined query error: ${joinError.message}`);
+    }
+
+    return c.json({
+      totalCount,
+      rawDataCount: rawSentiment?.length || 0,
+      joinedDataCount: joinedData?.length || 0,
+      rawData: rawSentiment || [],
+      joinedData: joinedData || [],
+      rawError: rawError?.message || null,
+      joinError: joinError?.message || null
+    });
+  } catch (error) {
+    console.log(`❌ Debug endpoint error: ${error}`);
+    return c.json({ error: `Debug failed: ${error.message}` }, 500);
+  }
+});
+
 // Get all sentiment data (admin only - with auth check)
 app.get("/server/all-sentiment", requireAuth, async (c) => {
   try {
-    const { data, error } = await supabase
+    // First try the complex join query for complete data
+    const { data: joinedData, error: joinError } = await supabase
       .from('user_sentiment')
-      .select('*')
+      .select(`
+        *,
+        user_webcapture!inner(
+          user_uid,
+          user_demographics!inner(uid)
+        )
+      `)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.log(`Database error: ${error.message}`);
-      return c.json({ error: `Failed to fetch sentiment: ${error.message}` }, 500);
+    // If joined query succeeds and has data, use it
+    if (!joinError && joinedData && joinedData.length > 0) {
+      console.log(`✅ Using joined data: ${joinedData.length} records`);
+      
+      // Group sentiment data by user and transform to expected format
+      const userSentimentMap = new Map();
+      
+      joinedData.forEach(record => {
+        const userId = record.user_webcapture.user_demographics.uid;
+        
+        if (!userSentimentMap.has(userId)) {
+          userSentimentMap.set(userId, []);
+        }
+        
+        // Transform sentiment record to expected format
+        userSentimentMap.get(userId).push({
+          timestamp: record.timestamp_seconds,
+          expressions: record.emotions
+        });
+      });
+
+      // Transform to client expected format
+      const transformedData = Array.from(userSentimentMap.entries()).map(([userId, sentimentData]) => ({
+        value: {
+          userId: userId,
+          sentimentData: sentimentData
+        }
+      }));
+
+      return c.json({ sentiment: transformedData });
     }
 
-    return c.json({ sentiment: data });
+    // Fallback: try to get sentiment data with left joins to handle NULL capture_ids
+    console.log(`⚠️ Joined query failed or returned no data, trying fallback approach`);
+    console.log(`Join error: ${joinError?.message || 'No error but no data'}`);
+    
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('user_sentiment')
+      .select(`
+        *,
+        user_webcapture(
+          user_uid,
+          user_demographics(uid)
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (fallbackError) {
+      console.log(`❌ Fallback query also failed: ${fallbackError.message}`);
+      return c.json({ error: `Failed to fetch sentiment: ${fallbackError.message}` }, 500);
+    }
+
+    console.log(`📊 Fallback query returned ${fallbackData?.length || 0} records`);
+
+    // Process fallback data, handling NULL captures
+    const userSentimentMap = new Map();
+    
+    fallbackData.forEach(record => {
+      let userId = 'unknown';
+      
+      // Try to get userId from webcapture data
+      if (record.user_webcapture && record.user_webcapture.user_demographics) {
+        userId = record.user_webcapture.user_demographics.uid;
+      } else if (record.user_webcapture && record.user_webcapture.user_uid) {
+        userId = record.user_webcapture.user_uid;
+      } else {
+        // For records without capture_id, create a placeholder
+        userId = `no_capture_${record.sentiment_id}`;
+      }
+      
+      if (!userSentimentMap.has(userId)) {
+        userSentimentMap.set(userId, []);
+      }
+      
+      // Transform sentiment record to expected format
+      userSentimentMap.get(userId).push({
+        timestamp: record.timestamp_seconds,
+        expressions: record.emotions
+      });
+    });
+
+    // Transform to client expected format
+    const transformedData = Array.from(userSentimentMap.entries()).map(([userId, sentimentData]) => ({
+      value: {
+        userId: userId,
+        sentimentData: sentimentData
+      }
+    }));
+
+    console.log(`✅ Returning ${transformedData.length} user sentiment datasets`);
+    return c.json({ sentiment: transformedData });
   } catch (error) {
     console.log(`Error fetching sentiment data: ${error}`);
     return c.json({ error: `Failed to fetch sentiment: ${error.message}` }, 500);

@@ -38,6 +38,7 @@ export const isAdminAuthenticated = (): boolean => {
 // Make authenticated API request
 export const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const token = getAdminToken();
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   
   if (!token) {
     throw new Error('No authentication token available');
@@ -45,7 +46,8 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
+    'Authorization': `Bearer ${supabaseAnonKey}`, // Supabase anon key for function access
+    'X-Admin-Token': token, // JWT token for admin authentication
     ...options.headers,
   };
   

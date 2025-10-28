@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 
 // API base URL for admin endpoints
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://spylqvzwvcjuaqgthxhw.supabase.co/functions/v1';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 interface AdminLoginProps {
   onLoginSuccess: () => void;
@@ -28,6 +29,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           username,
