@@ -89,6 +89,61 @@ const validateDemographics = (data: any) => {
   };
 };
 
+// Enhanced duration validation for video uploads
+const validateVideoDuration = (durationValue: string | null | undefined) => {
+  const MIN_DURATION = 0.1; // 100ms minimum
+  const MAX_DURATION = 3600; // 1 hour maximum
+  const DECIMAL_PLACES = 3;
+
+  const result = {
+    duration: MIN_DURATION,
+    isValid: false,
+    error: null as string | null,
+    originalValue: durationValue,
+    validationDetails: {
+      minDuration: MIN_DURATION,
+      maxDuration: MAX_DURATION,
+      decimalPlaces: DECIMAL_PLACES
+    }
+  };
+
+  // Check for null/undefined/empty
+  if (!durationValue || durationValue === 'undefined' || durationValue === 'null') {
+    result.error = 'Duration value is null, undefined, or empty';
+    return result;
+  }
+
+  // Parse to number
+  const parsedDuration = parseFloat(durationValue);
+  
+  // Check for NaN
+  if (isNaN(parsedDuration)) {
+    result.error = `Duration value "${durationValue}" is not a valid number`;
+    return result;
+  }
+
+  // Check minimum bound
+  if (parsedDuration < MIN_DURATION) {
+    result.duration = MIN_DURATION;
+    result.error = `Duration ${parsedDuration}s is below minimum ${MIN_DURATION}s, using minimum`;
+    return result;
+  }
+
+  // Check maximum bound
+  if (parsedDuration > MAX_DURATION) {
+    result.duration = MAX_DURATION;
+    result.error = `Duration ${parsedDuration}s exceeds maximum ${MAX_DURATION}s, using maximum`;
+    return result;
+  }
+
+  // Round to specified decimal places
+  const roundedDuration = Math.round(parsedDuration * Math.pow(10, DECIMAL_PLACES)) / Math.pow(10, DECIMAL_PLACES);
+  
+  result.duration = roundedDuration;
+  result.isValid = true;
+  return result;
+};
+
 // Rate limiting store (simple in-memory - in production use Redis)
 const rateLimits = new Map();
 
@@ -311,9 +366,10 @@ app.post("/server/upload-webcam", async (c) => {
     const experimentIdValue = formData.get('experimentId');
     const experimentId = experimentIdValue && experimentIdValue !== '' ? experimentIdValue as string : null;
     const durationValue = formData.get('duration') as string;
-    const duration = durationValue && durationValue !== 'undefined' && durationValue !== 'null' 
-      ? parseFloat(durationValue) 
-      : null;
+    
+    // Enhanced duration validation
+    const durationValidation = validateVideoDuration(durationValue);
+    const validatedDuration = durationValidation.duration;
 
     if (!file || !userId) {
       return c.json({ error: 'video file and userId are required' }, 400);
@@ -323,10 +379,13 @@ app.post("/server/upload-webcam", async (c) => {
     console.log(`📹 Upload webcam request:`, {
       userId: userId,
       experimentId: experimentId || 'null',
-      duration: duration,
-      durationValue: durationValue,
-      durationIsValid: !isNaN(duration) && duration !== null,
-      durationInSeconds: duration,
+      originalDurationValue: durationValue,
+      validatedDuration: validatedDuration,
+      durationValidation: {
+        isValid: durationValidation.isValid,
+        error: durationValidation.error,
+        validationDetails: durationValidation.validationDetails
+      },
       requestTimestamp: new Date().toISOString()
     });
     
@@ -379,33 +438,25 @@ app.post("/server/upload-webcam", async (c) => {
       return c.json({ error: `Upload failed: ${error.message}` }, 500);
     }
 
-    // Enhanced validation before database insert
-    const durationForDatabase = duration !== null && !isNaN(duration) && duration > 0 ? duration : null;
-    const durationValidationResult = {
-      originalDuration: duration,
-      processedDuration: durationForDatabase,
-      isValid: durationForDatabase !== null,
-      validationReason: durationForDatabase === null ? 
-        (duration === null ? 'null_input' : 
-         isNaN(duration) ? 'not_a_number' : 
-         duration <= 0 ? 'invalid_range' : 'unknown') : 'valid'
-    };
-    
-    // Store metadata in PostgreSQL - use correct column names
+    // Store metadata in PostgreSQL with validated duration
     console.log(`💾 Storing webcapture metadata:`, {
       userId: userId,
       experiment_id: finalExperimentId || 'null',
-      duration_seconds: durationForDatabase,
-      validation: durationValidationResult,
+      duration_seconds: validatedDuration,
+      durationValidation: {
+        isValid: durationValidation.isValid,
+        error: durationValidation.error,
+        originalValue: durationValidation.originalValue
+      },
       timestamp: new Date().toISOString()
     });
     
     const insertData = {
-      user_uid: userId, // Changed from 'uid' to 'user_uid'
-      experiment_id: finalExperimentId || null, // Use the resolved experiment ID
-      video_path: data.path, // Changed from 'video_storage_path' to 'video_path'
+      user_uid: userId,
+      experiment_id: finalExperimentId || null,
+      video_path: data.path,
       video_url: `${BUCKET_NAME}/${data.path}`,
-      duration_seconds: durationForDatabase, // Use validated duration value
+      duration_seconds: validatedDuration, // Use enhanced validated duration
     };
     
     console.log('Webcapture insert data:', JSON.stringify(insertData, null, 2));
@@ -428,8 +479,12 @@ app.post("/server/upload-webcam", async (c) => {
       storedExperimentId: captureData.experiment_id,
       requestedExperimentId: finalExperimentId,
       experimentIdMatches: captureData.experiment_id === finalExperimentId,
-      durationSent: durationForDatabase,
-      durationValidation: durationValidationResult,
+      durationSent: validatedDuration,
+      durationValidation: {
+        isValid: durationValidation.isValid,
+        error: durationValidation.error,
+        originalValue: durationValidation.originalValue
+      },
       insertSuccess: true,
       timestamp: new Date().toISOString()
     });
@@ -447,9 +502,10 @@ app.post("/server/upload-webcam", async (c) => {
       console.log(`🔍 Duration verification:`, {
         captureId: verificationData.capture_id,
         storedDurationSeconds: verificationData.duration_seconds,
-        sentDurationSeconds: durationForDatabase,
-        durationMatches: verificationData.duration_seconds === durationForDatabase,
+        sentDurationSeconds: validatedDuration,
+        durationMatches: verificationData.duration_seconds === validatedDuration,
         durationIsNull: verificationData.duration_seconds === null,
+        validationWasSuccessful: durationValidation.isValid,
         verificationTimestamp: new Date().toISOString()
       });
     }
@@ -889,6 +945,167 @@ app.get("/server/webcam-video/:userId", requireAuth, async (c) => {
   } catch (error) {
     console.log(`Error fetching webcam video: ${error}`);
     return c.json({ error: `Failed to fetch video: ${error.message}` }, 500);
+  }
+});
+
+// Get duration analytics for admin dashboard
+app.get("/server/duration-analytics", requireAuth, async (c) => {
+  try {
+    console.log('📊 Fetching duration analytics for admin dashboard');
+
+    // Get all webcapture records with demographics data
+    const { data: webcaptureData, error: webcaptureError } = await supabase
+      .from('user_webcapture')
+      .select(`
+        capture_id,
+        user_uid,
+        duration_seconds,
+        captured_at,
+        experiment_id,
+        user_demographics!inner(
+          uid,
+          age,
+          gender,
+          race,
+          nationality
+        )
+      `)
+      .not('duration_seconds', 'is', null)
+      .order('captured_at', { ascending: false });
+
+    if (webcaptureError) {
+      console.log(`❌ Error fetching webcapture data: ${webcaptureError.message}`);
+      return c.json({ error: `Failed to fetch duration data: ${webcaptureError.message}` }, 500);
+    }
+
+    console.log(`📈 Found ${webcaptureData?.length || 0} webcapture records with duration data`);
+
+    // Format duration data for admin dashboard
+    const durationRecords = webcaptureData.map(record => {
+      const duration = record.duration_seconds || 0;
+      const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+      };
+      
+      const formatPreciseTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        const secs = Math.floor(remainingSeconds);
+        const milliseconds = Math.round((remainingSeconds - secs) * 1000);
+        return `${mins}:${secs.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+      };
+
+      return {
+        userId: record.user_demographics.uid,
+        captureId: record.capture_id,
+        duration: duration,
+        formattedDuration: formatTime(duration),
+        preciseDuration: formatPreciseTime(duration),
+        recordedAt: record.captured_at,
+        demographics: {
+          age: record.user_demographics.age,
+          gender: record.user_demographics.gender,
+          race: record.user_demographics.race,
+          nationality: record.user_demographics.nationality
+        }
+      };
+    });
+
+    // Calculate overall statistics
+    const durations = durationRecords.map(r => r.duration).filter(d => d > 0);
+    const statistics = {
+      count: durations.length,
+      totalDuration: durations.reduce((sum, d) => sum + d, 0),
+      averageDuration: durations.length > 0 ? durations.reduce((sum, d) => sum + d, 0) / durations.length : 0,
+      minDuration: durations.length > 0 ? Math.min(...durations) : 0,
+      maxDuration: durations.length > 0 ? Math.max(...durations) : 0,
+      medianDuration: durations.length > 0 ? (() => {
+        const sorted = [...durations].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      })() : 0
+    };
+
+    // Calculate duration distribution buckets
+    const distribution = [
+      { bucket: '0-15s', count: 0, percentage: 0 },
+      { bucket: '15-30s', count: 0, percentage: 0 },
+      { bucket: '30-60s', count: 0, percentage: 0 },
+      { bucket: '60-120s', count: 0, percentage: 0 },
+      { bucket: '120s+', count: 0, percentage: 0 }
+    ];
+
+    durations.forEach(duration => {
+      if (duration <= 15) distribution[0].count++;
+      else if (duration <= 30) distribution[1].count++;
+      else if (duration <= 60) distribution[2].count++;
+      else if (duration <= 120) distribution[3].count++;
+      else distribution[4].count++;
+    });
+
+    // Calculate percentages
+    const totalRecords = durations.length;
+    distribution.forEach(bucket => {
+      bucket.percentage = totalRecords > 0 ? (bucket.count / totalRecords) * 100 : 0;
+    });
+
+    // Group statistics by demographics
+    const byDemographics = {
+      age: {},
+      gender: {},
+      race: {},
+      nationality: {}
+    };
+
+    const groupStatistics = (records: any[], groupKey: string) => {
+      const groups = {};
+      records.forEach(record => {
+        const groupValue = record.demographics[groupKey];
+        if (!groups[groupValue]) {
+          groups[groupValue] = [];
+        }
+        groups[groupValue].push(record.duration);
+      });
+
+      const groupStats = {};
+      Object.entries(groups).forEach(([key, durations]: [string, number[]]) => {
+        const validDurations = durations.filter(d => d > 0);
+        if (validDurations.length > 0) {
+          groupStats[key] = {
+            count: validDurations.length,
+            averageDuration: validDurations.reduce((sum, d) => sum + d, 0) / validDurations.length,
+            minDuration: Math.min(...validDurations),
+            maxDuration: Math.max(...validDurations)
+          };
+        }
+      });
+      return groupStats;
+    };
+
+    byDemographics.age = groupStatistics(durationRecords, 'age');
+    byDemographics.gender = groupStatistics(durationRecords, 'gender');
+    byDemographics.race = groupStatistics(durationRecords, 'race');
+    byDemographics.nationality = groupStatistics(durationRecords, 'nationality');
+
+    console.log(`📊 Duration analytics prepared:`, {
+      totalRecords: durationRecords.length,
+      statisticsCount: statistics.count,
+      averageDuration: statistics.averageDuration,
+      distributionData: distribution
+    });
+
+    return c.json({
+      records: durationRecords,
+      statistics: statistics,
+      distribution: distribution,
+      byDemographics: byDemographics
+    });
+
+  } catch (error) {
+    console.log(`❌ Error in duration analytics: ${error.message}`);
+    return c.json({ error: `Failed to fetch duration analytics: ${error.message}` }, 500);
   }
 });
 
