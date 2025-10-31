@@ -5,6 +5,13 @@ import * as faceapi from "@vladmandic/face-api";
 import { projectId, publicAnonKey } from "../utils/supabase/info";
 import { loadFaceApiModels, checkTensorFlowBackend } from "../utils/faceapi-loader";
 import { logError, logUserAction, logPerformance } from "../utils/logger";
+import { 
+  calculateWebcamDuration, 
+  validateDuration, 
+  logDurationCalculation,
+  formatDuration 
+} from "../utils/durationCalculator";
+import type { WebcamRecordingDuration } from "../types/duration";
 
 interface ExperimentViewProps {
   webcamStream: MediaStream;
@@ -47,9 +54,17 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
   const [showWebcamPreview, setShowWebcamPreview] = useState(true);
   const [mediaRecorderWorking, setMediaRecorderWorking] = useState(false);
   
-  // Webcam recording duration tracking
+  // Enhanced webcam recording duration tracking
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
+  const [recordingStopTime, setRecordingStopTime] = useState<number | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
+  const [durationTrackingRef, setDurationTrackingRef] = useState<WebcamRecordingDuration>({
+    duration: 0,
+    startTime: null,
+    stopTime: null,
+    isFromRecording: false,
+    source: 'fallback'
+  });
 
   // Load face-api models using singleton pattern
   useEffect(() => {
@@ -419,25 +434,30 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
   const handleVideoEnded = () => {
     setIsPlaying(false);
     
-    // Calculate actual webcam recording duration
-    const webcamRecordingDuration = recordingStartTime !== null 
-      ? (Date.now() - recordingStartTime) / 1000 
-      : recordingDuration || 0;
+    // Calculate duration using improved utility function
+    const stopTime = Date.now();
+    setRecordingStopTime(stopTime);
     
-    console.log("🎬 Video ended - using webcam recording duration:", {
+    const durationResult = calculateWebcamDuration(
       recordingStartTime,
-      currentTime: Date.now(),
-      webcamRecordingDuration,
-      fallbackRecordingDuration: recordingDuration
+      stopTime,
+      videoRef.current?.currentTime
+    );
+    
+    logDurationCalculation(durationResult, 'handleVideoEnded', {
+      recordingStartTime,
+      stopTime,
+      videoElementTime: videoRef.current?.currentTime,
+      userId
     });
     
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      // Pass the actual webcam recording duration
+      // Pass the validated duration
       mediaRecorderRef.current.onstop = async () => {
         try {
           await handleMediaRecorderStop({ 
             sentimentData: [...sentimentData], 
-            videoTime: webcamRecordingDuration 
+            videoTime: durationResult.duration 
           });
         } catch (error) {
           logError("Error in MediaRecorder onstop handler", error as Error, "ExperimentView", userId);
@@ -446,12 +466,13 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
       };
       mediaRecorderRef.current.stop();
     } else {
-      // No MediaRecorder, handle completion directly with webcam recording duration
-      handleCompletionWithoutVideo([...sentimentData], webcamRecordingDuration);
+      // No MediaRecorder, handle completion directly with calculated duration
+      handleCompletionWithoutVideo([...sentimentData], durationResult.duration);
     }
     
     // Reset recording tracking
     setRecordingStartTime(null);
+    setRecordingStopTime(null);
     setRecordingDuration(0);
   };
 
@@ -460,17 +481,23 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
     // This prevents race condition with component cleanup effect
     const capturedSentimentData = [...sentimentData];
     
-    // Calculate actual webcam recording duration instead of experiment video time
-    const webcamRecordingDuration = recordingStartTime !== null 
-      ? (Date.now() - recordingStartTime) / 1000 
-      : recordingDuration || 0;
+    // Calculate duration using improved utility function
+    const stopTime = Date.now();
+    setRecordingStopTime(stopTime);
     
-    console.log("🔒 Pre-stop sentiment data capture:", {
+    const durationResult = calculateWebcamDuration(
+      recordingStartTime,
+      stopTime,
+      videoRef.current?.currentTime
+    );
+    
+    logDurationCalculation(durationResult, 'handleStop', {
       dataPointCount: capturedSentimentData.length,
       firstPoint: capturedSentimentData[0]?.timestamp,
       lastPoint: capturedSentimentData[capturedSentimentData.length - 1]?.timestamp,
-      webcamRecordingDuration: webcamRecordingDuration,
-      recordingStartTime: recordingStartTime
+      recordingStartTime,
+      stopTime,
+      userId
     });
     
     // Stop the video immediately
@@ -480,7 +507,7 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
     }
     
     // Store captured data in a ref that won't be cleared by cleanup effects
-    const capturedDataRef = { sentimentData: capturedSentimentData, videoTime: webcamRecordingDuration };
+    const capturedDataRef = { sentimentData: capturedSentimentData, videoTime: durationResult.duration };
     
     // Stop MediaRecorder and trigger data processing
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -503,10 +530,13 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
     
     // Reset recording tracking
     setRecordingStartTime(null);
+    setRecordingStopTime(null);
     setRecordingDuration(0);
     
     logUserAction('experiment_stopped_manually', userId, { 
-      webcamRecordingDuration: webcamRecordingDuration,
+      webcamRecordingDuration: durationResult.duration,
+      durationSource: durationResult.source,
+      durationValid: durationResult.isValid,
       sentimentDataPoints: capturedSentimentData.length 
     });
   };
@@ -517,7 +547,22 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
       
       // Use provided captured data or fall back to current state (for backward compatibility)
       const finalSentimentData = capturedSentimentData || [...sentimentData];
-      const finalVideoTime = capturedVideoTime || (videoRef.current?.currentTime || 0);
+      
+      // Validate the provided duration or calculate a fallback
+      let finalVideoTime = capturedVideoTime;
+      if (!finalVideoTime || finalVideoTime <= 0) {
+        const fallbackDuration = calculateWebcamDuration(
+          recordingStartTime,
+          Date.now(),
+          videoRef.current?.currentTime
+        );
+        finalVideoTime = fallbackDuration.duration;
+        
+        logDurationCalculation(fallbackDuration, 'handleCompletionWithoutVideo-fallback', {
+          providedDuration: capturedVideoTime,
+          userId
+        });
+      }
       
       console.log("🔒 Captured sentiment data for submission (no video):", {
         dataPointCount: finalSentimentData.length,
@@ -559,18 +604,28 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
 
   // New function to handle MediaRecorder stop with captured data
   const handleMediaRecorderStop = async (capturedDataRef: { sentimentData: SentimentDataPoint[], videoTime: number }) => {
-    console.log("🔒 MediaRecorder stopped with captured data:", {
+    // Validate the duration before uploading
+    const validationResult = validateDuration(capturedDataRef.videoTime);
+    const finalDuration = validationResult.duration;
+    
+    logDurationCalculation({
+      duration: finalDuration,
+      isValid: validationResult.isValid,
+      source: 'recording',
+      validationError: validationResult.error
+    }, 'handleMediaRecorderStop', {
       dataPointCount: capturedDataRef.sentimentData.length,
-      videoTime: capturedDataRef.videoTime
+      originalDuration: capturedDataRef.videoTime,
+      userId
     });
     
     const blob = new Blob(chunksRef.current, { type: 'video/webm' });
     
-    // Upload to backend with video duration
+    // Upload to backend with validated video duration
     const formData = new FormData();
     formData.append('video', blob, `webcam_${userId}.webm`);
     formData.append('userId', userId);
-    formData.append('duration', capturedDataRef.videoTime.toString()); // Add video duration
+    formData.append('duration', finalDuration.toString()); // Add validated video duration
     
     // Get experiment ID (keeping existing logic)
     let experimentId: string | null = null;
