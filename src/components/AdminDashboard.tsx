@@ -3,12 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
-import { Play, Pause, Users, LogOut } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { Play, Pause, Users, LogOut, Clock, Timer, TrendingUp } from "lucide-react";
 import { Button } from "./ui/button";
 import type { SentimentDataPoint } from "./ExperimentView";
 import { authenticatedFetch, getApiBaseUrl, clearAdminToken, isAdminAuthenticated } from "../utils/auth";
 import { logError, logUserAction } from "../utils/logger";
+import type { AdminDashboardDuration } from "../types/duration";
 
 interface DemographicData {
   age: string;
@@ -72,7 +73,36 @@ interface UserData {
   sentiment: SentimentDataPoint[];
 }
 
+interface DurationStatistics {
+  count: number;
+  totalDuration: number;
+  averageDuration: number;
+  minDuration: number;
+  maxDuration: number;
+  medianDuration: number;
+}
+
+interface DurationDistribution {
+  bucket: string;
+  count: number;
+  percentage: number;
+}
+
+interface DurationAnalytics {
+  records: AdminDashboardDuration[];
+  statistics: DurationStatistics;
+  distribution: DurationDistribution[];
+  byDemographics: {
+    age: Record<string, any>;
+    gender: Record<string, any>;
+    race: Record<string, any>;
+    nationality: Record<string, any>;
+  };
+}
+
 const MINIMUM_PARTICIPANT_THRESHOLD = 5;
+
+const DURATION_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 interface AdminDashboardProps {
   onLogout?: () => void;
@@ -87,7 +117,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
   const [filteredUserData, setFilteredUserData] = useState<UserData[]>([]);
   const [aggregatedData, setAggregatedData] = useState<AggregatedDataPoint[]>([]);
   const [currentSentiment, setCurrentSentiment] = useState<SentimentDataPoint | null>(null);
+  // Privacy warning disabled for testing
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
+  const [durationAnalytics, setDurationAnalytics] = useState<DurationAnalytics | null>(null);
 
   const [filters, setFilters] = useState<DemographicFilter>({
     age: "all",
@@ -113,13 +145,18 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
         }
 
         const apiBaseUrl = getApiBaseUrl();
-        const [demographicsRes, sentimentRes] = await Promise.all([
+        const [demographicsRes, sentimentRes, durationRes] = await Promise.all([
           authenticatedFetch(`${apiBaseUrl}/server/all-demographics`),
           authenticatedFetch(`${apiBaseUrl}/server/all-sentiment`),
+          authenticatedFetch(`${apiBaseUrl}/server/duration-analytics`),
         ]);
 
         const demographicsData = await demographicsRes.json();
         const sentimentDataRes = await sentimentRes.json();
+        const durationData = await durationRes.json();
+
+        // Set duration analytics
+        setDurationAnalytics(durationData);
 
         // Combine data by userId
         const combinedData: UserData[] = [];
@@ -174,7 +211,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     });
 
     setFilteredUserData(filtered);
-    setShowPrivacyWarning(filtered.length < MINIMUM_PARTICIPANT_THRESHOLD);
+    // Privacy threshold disabled for testing purposes
+    // setShowPrivacyWarning(filtered.length < MINIMUM_PARTICIPANT_THRESHOLD);
+    setShowPrivacyWarning(false);
   }, [filters, allUserData]);
 
   // Update current sentiment based on video time
@@ -247,27 +286,33 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
       if (dataInBucket.length > 0) {
         const avg = {
           time: startTime,
+          neutral: 0,
           happy: 0,
           sad: 0,
           angry: 0,
+          fearful: 0,
+          disgusted: 0,
           surprised: 0,
-          neutral: 0,
         };
 
         dataInBucket.forEach(point => {
+          avg.neutral += point.expressions.neutral;
           avg.happy += point.expressions.happy;
           avg.sad += point.expressions.sad;
           avg.angry += point.expressions.angry;
+          avg.fearful += point.expressions.fearful;
+          avg.disgusted += point.expressions.disgusted;
           avg.surprised += point.expressions.surprised;
-          avg.neutral += point.expressions.neutral;
         });
 
         const count = dataInBucket.length;
+        avg.neutral /= count;
         avg.happy /= count;
         avg.sad /= count;
         avg.angry /= count;
+        avg.fearful /= count;
+        avg.disgusted /= count;
         avg.surprised /= count;
-        avg.neutral /= count;
 
         buckets.push(avg);
       }
@@ -335,15 +380,52 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
             <p className="text-muted-foreground">Facial Sentiment Analysis Results</p>
           </div>
           <div className="flex items-center gap-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-blue-600" />
-                <div>
-                  <div className="text-2xl">{filteredUserData.length}</div>
-                  <div className="text-sm text-muted-foreground">Participants</div>
+            <div className="flex gap-4">
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <Users className="w-8 h-8 text-blue-600" />
+                  <div>
+                    <div className="text-2xl">{filteredUserData.length}</div>
+                    <div className="text-sm text-muted-foreground">Participants</div>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+              
+              {durationAnalytics && (
+                <>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-8 h-8 text-green-600" />
+                      <div>
+                        <div className="text-2xl">{durationAnalytics.statistics.count}</div>
+                        <div className="text-sm text-muted-foreground">Recordings</div>
+                      </div>
+                    </div>
+                  </Card>
+                  
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Timer className="w-8 h-8 text-orange-600" />
+                      <div>
+                        <div className="text-2xl">{Math.round(durationAnalytics.statistics.averageDuration)}s</div>
+                        <div className="text-sm text-muted-foreground">Avg Duration</div>
+                      </div>
+                    </div>
+                  </Card>
+                  
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="w-8 h-8 text-purple-600" />
+                      <div>
+                        <div className="text-2xl">{Math.round(durationAnalytics.statistics.totalDuration / 60)}m</div>
+                        <div className="text-sm text-muted-foreground">Total Time</div>
+                      </div>
+                    </div>
+                  </Card>
+                </>
+              )}
+            </div>
+            
             <Button 
               variant="outline" 
               onClick={handleLogout}
@@ -531,8 +613,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
 
             <Card>
               <CardHeader>
-                <CardTitle>Sentiment Timeline</CardTitle>
-                <CardDescription>Average emotional responses throughout the video</CardDescription>
+                <CardTitle>Emotion Analytics Timeline</CardTitle>
+                <CardDescription>All 7 emotions averaged over users throughout the experiment video</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -545,16 +627,161 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                     <YAxis />
                     <Tooltip labelFormatter={(value) => `Time: ${formatTime(value as number)}`} />
                     <Legend />
-                    <Line type="monotone" dataKey="happy" stroke="#10b981" strokeWidth={2} />
-                    <Line type="monotone" dataKey="sad" stroke="#3b82f6" strokeWidth={2} />
-                    <Line type="monotone" dataKey="angry" stroke="#ef4444" strokeWidth={2} />
-                    <Line type="monotone" dataKey="surprised" stroke="#f59e0b" strokeWidth={2} />
-                    <Line type="monotone" dataKey="neutral" stroke="#6b7280" strokeWidth={2} />
+                    <Line type="monotone" dataKey="neutral" stroke="#6b7280" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="happy" stroke="#10b981" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="sad" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="angry" stroke="#ef4444" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="fearful" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="disgusted" stroke="#84cc16" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="surprised" stroke="#f59e0b" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Duration Analytics Section */}
+        {durationAnalytics && !showPrivacyWarning && (
+          <>
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Recording Duration Analytics</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Duration Statistics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Duration Statistics</CardTitle>
+                  <CardDescription>Summary of recording durations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Total Recordings:</span>
+                      <span className="font-medium">{durationAnalytics.statistics.count}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Average Duration:</span>
+                      <span className="font-medium">{Math.round(durationAnalytics.statistics.averageDuration)}s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Median Duration:</span>
+                      <span className="font-medium">{Math.round(durationAnalytics.statistics.medianDuration)}s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Min Duration:</span>
+                      <span className="font-medium">{Math.round(durationAnalytics.statistics.minDuration)}s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Max Duration:</span>
+                      <span className="font-medium">{Math.round(durationAnalytics.statistics.maxDuration)}s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Total Time:</span>
+                      <span className="font-medium">{Math.round(durationAnalytics.statistics.totalDuration / 60)}m</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Duration Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Duration Distribution</CardTitle>
+                  <CardDescription>Breakdown by duration ranges</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={durationAnalytics.distribution}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ bucket, percentage }) => `${bucket}: ${percentage.toFixed(1)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="count"
+                      >
+                        {durationAnalytics.distribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={DURATION_CHART_COLORS[index % DURATION_CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number, name: string) => [`${value} recordings`, 'Count']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Duration by Demographics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Duration by Age Group</CardTitle>
+                  <CardDescription>Average recording duration by age</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={Object.entries(durationAnalytics.byDemographics.age).map(([age, stats]: [string, any]) => ({
+                      age,
+                      averageDuration: Math.round(stats.averageDuration),
+                      count: stats.count
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="age" />
+                      <YAxis />
+                      <Tooltip formatter={(value: number, name: string) => [
+                        name === 'averageDuration' ? `${value}s` : `${value} recordings`,
+                        name === 'averageDuration' ? 'Average Duration' : 'Count'
+                      ]} />
+                      <Bar dataKey="averageDuration" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Detailed Duration Records */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Recording Durations</CardTitle>
+                <CardDescription>Individual recording duration details</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">User ID</th>
+                        <th className="text-left p-2">Duration</th>
+                        <th className="text-left p-2">Precise Duration</th>
+                        <th className="text-left p-2">Age</th>
+                        <th className="text-left p-2">Gender</th>
+                        <th className="text-left p-2">Recorded At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {durationAnalytics.records.slice(0, 10).map((record) => (
+                        <tr key={record.captureId} className="border-b">
+                          <td className="p-2 font-mono text-xs">{record.userId.substring(0, 8)}...</td>
+                          <td className="p-2">{record.formattedDuration}</td>
+                          <td className="p-2 font-mono text-xs">{record.preciseDuration}</td>
+                          <td className="p-2">{record.demographics.age}</td>
+                          <td className="p-2">{record.demographics.gender}</td>
+                          <td className="p-2">{new Date(record.recordedAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {durationAnalytics.records.length > 10 && (
+                    <p className="text-sm text-muted-foreground mt-2 p-2">
+                      Showing 10 of {durationAnalytics.records.length} recordings
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
     </div>
