@@ -6,22 +6,11 @@
   "installCommand": "npm ci --prefer-offline --no-audit",
   "regions": ["iad1", "sfo1"],
   "functions": {
-    "app/api/*.js": {
+    "api/*.js": {
       "maxDuration": 10
     }
   },
-  "redirects": [
-    {
-      "source": "/api/:path*",
-      "destination": "/server/:path*",
-      "permanent": false
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/server/(.*)",
-      "destination": "/server/$1"
-    },
     {
       "source": "/health",
       "destination": "/api/health"
