@@ -66,7 +66,9 @@ app.use(
       ? [
           Deno.env.get('FRONTEND_URL') || 'https://facial-sentiment.vercel.app',
           // Allow all Vercel preview and production URLs for facial-sentiment project
-          /^https:\/\/facial-sentiment.*\.vercel\.app$/
+          /^https:\/\/facial-sentiment.*\.vercel\.app$/,
+          // Allow the specific Vercel deployment URL from the error
+          'https://facial-sentiment-analysis-b04f5d6b3-jsukups-projects.vercel.app'
         ]
       : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:4173', 'http://localhost:5173'],
     allowHeaders: ["Content-Type", "Authorization", "X-Admin-Token"],
