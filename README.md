@@ -12,6 +12,7 @@ A production-ready web application for real-time facial emotion detection using 
 - 📹 Video recording and storage
 - 📈 Performance optimized (90/100 Lighthouse score)
 - ♿ Fully accessible (100/100 accessibility score)
+- 🚀 Automated CI/CD with Vercel deployment
 
 ## Tech Stack
 
