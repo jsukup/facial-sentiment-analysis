@@ -63,7 +63,11 @@ app.use(
   "/*",
   cors({
     origin: Deno.env.get('NODE_ENV') === 'production' 
-      ? [Deno.env.get('FRONTEND_URL') || 'https://facial-sentiment.vercel.app']
+      ? [
+          Deno.env.get('FRONTEND_URL') || 'https://facial-sentiment.vercel.app',
+          // Allow all Vercel preview and production URLs for facial-sentiment project
+          /^https:\/\/facial-sentiment.*\.vercel\.app$/
+        ]
       : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:4173', 'http://localhost:5173'],
     allowHeaders: ["Content-Type", "Authorization", "X-Admin-Token"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
