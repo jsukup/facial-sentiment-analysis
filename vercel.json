@@ -98,17 +98,5 @@
     "autoDeployment": true,
     "deploymentEnabled": true,
     "autoJobCancelation": true
-  },
-  "env": {
-    "VITE_BUILD_TARGET": "production",
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "VITE_SUPABASE_PROJECT_ID": "@vite_supabase_project_id",
-      "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key",
-      "VITE_SENTRY_DSN": "@vite_sentry_dsn",
-      "VITE_BUILD_TARGET": "production"
-    }
   }
 }
