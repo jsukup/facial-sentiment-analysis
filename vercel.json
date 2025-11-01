@@ -4,7 +4,6 @@
   "outputDirectory": "build",
   "framework": "vite",
   "installCommand": "npm ci --prefer-offline --no-audit",
-  "regions": ["iad1", "sfo1"],
   "functions": {
     "api/*.js": {
       "maxDuration": 10
