@@ -167,12 +167,3 @@ npm run test:all
 2. Create your feature branch
 3. Run tests before committing
 4. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details
-
-## Support
-
-For issues and questions, please use the GitHub issue tracker.
-  
