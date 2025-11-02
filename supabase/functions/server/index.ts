@@ -59,24 +59,33 @@ const BUCKET_NAME = 'make-8f45bf92-user-webcapture';
 app.use('*', logger(console.log));
 
 // Enable CORS for all routes and methods
+// Configure allowed origins - includes both production and development
+const allowedOrigins = [
+  // Production domains
+  Deno.env.get('FRONTEND_URL') || 'https://facial-sentiment-analysis.vercel.app',
+  'https://facial-sentiment.vercel.app',
+  'https://facial-sentiment-analysis.vercel.app',
+  // Vercel preview deployments (comprehensive patterns)
+  /^https:\/\/facial-sentiment-analysis.*\.vercel\.app$/,
+  /^https:\/\/facial-sentiment.*\.vercel\.app$/,
+  /^https:\/\/.*-jsukups-projects\.vercel\.app$/,
+  // Development origins
+  'http://localhost:3000',
+  'http://localhost:3001', 
+  'http://localhost:3002',
+  'http://localhost:4173',
+  'http://localhost:5173'
+];
+
 app.use(
   "/*",
   cors({
-    origin: Deno.env.get('NODE_ENV') === 'production' 
-      ? [
-          Deno.env.get('FRONTEND_URL') || 'https://facial-sentiment.vercel.app',
-          // Allow all Vercel deployment URLs for facial-sentiment-analysis project (comprehensive pattern)
-          /^https:\/\/facial-sentiment-analysis.*\.vercel\.app$/,
-          // Allow all jsukups-projects Vercel deployments
-          /^https:\/\/.*-jsukups-projects\.vercel\.app$/,
-          // Fallback for any facial-sentiment related Vercel URL
-          /^https:\/\/facial-sentiment.*\.vercel\.app$/
-        ]
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:4173', 'http://localhost:5173'],
+    origin: allowedOrigins,
     allowHeaders: ["Content-Type", "Authorization", "X-Admin-Token"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
+    credentials: true
   }),
 );
 
