@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, ReferenceLine } from "recharts";
 import { Play, Pause, Users, LogOut, Clock, Timer, TrendingUp } from "lucide-react";
 import { Button } from "./ui/button";
 import type { SentimentDataPoint } from "./ExperimentView";
@@ -113,6 +113,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const [allUserData, setAllUserData] = useState<UserData[]>([]);
   const [filteredUserData, setFilteredUserData] = useState<UserData[]>([]);
   const [aggregatedData, setAggregatedData] = useState<AggregatedDataPoint[]>([]);
@@ -120,6 +121,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
   // Privacy warning disabled for testing
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
   const [durationAnalytics, setDurationAnalytics] = useState<DurationAnalytics | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<DemographicFilter>({
     age: "all",
@@ -133,6 +135,64 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     clearAdminToken();
     onLogout?.();
   };
+
+  // Fetch video URL from Supabase
+  useEffect(() => {
+    const fetchVideoUrl = async () => {
+      try {
+        const apiBaseUrl = getApiBaseUrl();
+        // Fetch experiment video from the same endpoint used in ExperimentView
+        const expResponse = await fetch(
+          `${apiBaseUrl}/rest/v1/experiment_videos?select=experiment_id,video_name,is_active&is_active=eq.true&limit=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+            }
+          }
+        );
+        
+        if (expResponse.ok) {
+          const experiments = await expResponse.json();
+          
+          if (experiments && experiments.length > 0) {
+            const videoName = experiments[0].video_name;
+            // Construct Supabase storage URL for the video
+            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+            const storageUrl = `https://${projectId}.supabase.co/storage/v1/object/public/experiment_videos/${videoName}`;
+            setVideoUrl(storageUrl);
+          } else {
+            // Fallback: try to get any experiment video
+            const fallbackResponse = await fetch(
+              `${apiBaseUrl}/rest/v1/experiment_videos?select=experiment_id,video_name,is_active&limit=1`,
+              {
+                headers: {
+                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                  'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+                }
+              }
+            );
+            
+            if (fallbackResponse.ok) {
+              const allExperiments = await fallbackResponse.json();
+              if (allExperiments && allExperiments.length > 0) {
+                const videoName = allExperiments[0].video_name;
+                const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                const storageUrl = `https://${projectId}.supabase.co/storage/v1/object/public/experiment_videos/${videoName}`;
+                setVideoUrl(storageUrl);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching video URL:', error);
+        // Use BigBuckBunny as fallback
+        setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+      }
+    };
+    
+    fetchVideoUrl();
+  }, []);
 
   // Fetch all data from backend
   useEffect(() => {
@@ -463,6 +523,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      setVideoLoaded(true);
     }
   };
 
@@ -696,25 +757,29 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                   }
                 }}
               >
-                {/* Use local placeholder video or remove external source */}
-                <source src="/sample-video.mp4" type="video/mp4" />
+                {/* Use video from Supabase storage */}
+                {videoUrl && <source src={videoUrl} type="video/mp4" />}
               </video>
               
               {/* Fallback content when video fails to load */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-gray-800 bg-opacity-90">
-                <div className="text-center p-6">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <Play className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Demo Mode</h3>
-                  <p className="text-sm text-gray-300 mb-4">
-                    Video content not available. Charts below show sentiment analysis data.
-                  </p>
-                  <div className="text-xs text-gray-400">
-                    To use with real video: Place video file at /public/sample-video.mp4
+              {!videoLoaded && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-gray-800 bg-opacity-90">
+                  <div className="text-center p-6">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <Play className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">{videoUrl ? 'Loading Video...' : 'Demo Mode'}</h3>
+                    <p className="text-sm text-gray-300 mb-4">
+                      {videoUrl ? 'Experiment video is loading from Supabase storage.' : 'Video content not available. Charts below show sentiment analysis data.'}
+                    </p>
+                    {!videoUrl && (
+                      <div className="text-xs text-gray-400">
+                        No experiment video found in Supabase storage.
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -778,6 +843,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="time"
+                      type="number"
+                      scale="linear"
+                      domain={[0, duration || 100]}
                       tickFormatter={(value) => formatTime(value)}
                     />
                     <YAxis />
@@ -790,6 +858,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                     <Line type="monotone" dataKey="fearful" stroke="#8b5cf6" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="disgusted" stroke="#84cc16" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="surprised" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                    {/* Video tracking line - synchronized with video playback */}
+                    <ReferenceLine 
+                      x={currentTime} 
+                      stroke="#ff0000" 
+                      strokeWidth={3}
+                      strokeDasharray="5 5"
+                      label={{ value: "Current", position: "top" }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
