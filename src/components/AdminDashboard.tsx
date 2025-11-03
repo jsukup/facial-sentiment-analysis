@@ -154,14 +154,23 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     const fetchVideos = async () => {
       try {
         setVideosLoading(true);
-        const apiBaseUrl = getApiBaseUrl();
         
+        // Check authentication before making requests
+        if (!isAdminAuthenticated()) {
+          handleLogout();
+          return;
+        }
+
+        // Temporary workaround: Use Supabase REST API directly until Edge Function is deployed
+        const supabaseUrl = 'https://spylqvzwvcjuaqgthxhw.supabase.co';
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         const response = await fetch(
-          `${apiBaseUrl}/rest/v1/experiment_videos?select=experiment_id,video_url,video_name,duration_seconds,is_active&is_active=eq.true&order=duration_seconds.asc`,
+          `${supabaseUrl}/rest/v1/experiment_videos?select=experiment_id,video_url,video_name,duration_seconds,is_active&is_active=eq.true&order=duration_seconds.asc`,
           {
             headers: {
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+              'apikey': supabaseAnonKey,
+              'Content-Type': 'application/json'
             }
           }
         );
@@ -178,11 +187,31 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
               videoCount: videos.length,
               defaultVideo: videos[0].video_name 
             });
+          } else {
+            // No videos found in database, use fallback
+            logError('No experiment videos found', new Error('Empty video list'), 'AdminDashboard');
+            
+            const fallbackVideo: ExperimentVideo = {
+              experiment_id: 'fallback',
+              video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+              video_name: 'Big Buck Bunny (Fallback)',
+              duration_seconds: 596,
+              is_active: true
+            };
+            setAvailableVideos([fallbackVideo]);
+            setSelectedVideo(fallbackVideo);
+            setVideoUrl(fallbackVideo.video_url);
           }
         } else {
           logError('Failed to fetch experiment videos', new Error(`HTTP ${response.status}`), 'AdminDashboard');
           
-          // Fallback to BigBuckBunny if API fails
+          // Check if authentication error
+          if (response.status === 401) {
+            handleLogout();
+            return;
+          }
+          
+          // Fallback to BigBuckBunny for other API errors
           const fallbackVideo: ExperimentVideo = {
             experiment_id: 'fallback',
             video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
@@ -196,6 +225,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
         }
       } catch (error) {
         logError('Error fetching experiment videos', error as Error, 'AdminDashboard');
+        
+        // If authentication error, redirect to login
+        if (error instanceof Error && error.message.includes('Authentication failed')) {
+          handleLogout();
+          return;
+        }
         
         // Fallback to BigBuckBunny if fetch fails
         const fallbackVideo: ExperimentVideo = {

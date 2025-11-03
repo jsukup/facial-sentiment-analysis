@@ -8,40 +8,20 @@
 
 -- Insert additional experiment videos from Google test video collection
 -- Focus on shorter videos (under 5 minutes) for better user experience
+-- Insert videos only if they don't already exist
 INSERT INTO experiment_videos (video_url, video_name, duration_seconds, is_active)
-VALUES 
-  -- Short promotional videos (~15 seconds each)
-  (
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    'For Bigger Fun (Short)',
-    15,
-    true
-  ),
-  (
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    'For Bigger Escapes (Short)',
-    15,
-    true
-  ),
-  (
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    'For Bigger Blazes (Short)',
-    15,
-    true
-  ),
-  (
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    'For Bigger Joyrides (Short)',
-    15,
-    true
-  ),
-  (
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-    'For Bigger Meltdowns (Short)',
-    15,
-    true
-  )
-ON CONFLICT (video_url) DO NOTHING; -- Prevent duplicates if migration runs multiple times
+SELECT * FROM (
+  VALUES 
+    -- Short promotional videos (~15 seconds each)
+    ('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 'For Bigger Fun (Short)', 15, true),
+    ('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', 'For Bigger Escapes (Short)', 15, true),
+    ('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', 'For Bigger Blazes (Short)', 15, true),
+    ('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', 'For Bigger Joyrides (Short)', 15, true),
+    ('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', 'For Bigger Meltdowns (Short)', 15, true)
+) AS new_videos(video_url, video_name, duration_seconds, is_active)
+WHERE NOT EXISTS (
+  SELECT 1 FROM experiment_videos WHERE experiment_videos.video_url = new_videos.video_url
+); -- Prevent duplicates if migration runs multiple times
 
 -- ===================================================
 -- UPDATE EXISTING BIG BUCK BUNNY RECORD

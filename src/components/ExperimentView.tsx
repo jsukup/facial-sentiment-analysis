@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
-import { Play, Square, Eye, EyeOff, Video } from "lucide-react";
+import { Play, Square, Video } from "lucide-react";
 import * as faceapi from "@vladmandic/face-api";
 import { projectId, publicAnonKey } from "../utils/supabase/info";
 import { loadFaceApiModels, checkTensorFlowBackend } from "../utils/faceapi-loader";
@@ -67,7 +67,6 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
   const [sentimentData, setSentimentData] = useState<SentimentDataPoint[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [webcamReady, setWebcamReady] = useState(false);
-  const [showWebcamPreview, setShowWebcamPreview] = useState(true);
   const [mediaRecorderWorking, setMediaRecorderWorking] = useState(false);
   
   // Video selection state
@@ -333,12 +332,63 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
       return;
     }
 
-    console.log("✅ Starting face detection interval");
-    const detectInterval = setInterval(async () => {
-      if (webcamVideoRef.current && videoRef.current) {
+    // Give the webcam video element a moment to stabilize after starting
+    const startDelay = setTimeout(() => {
+      console.log("✅ Starting face detection interval");
+      const detectInterval = setInterval(async () => {
+        if (webcamVideoRef.current && videoRef.current && !webcamVideoRef.current.paused) {
         try {
+          // Add debug logging for webcam element state
+          const webcamState = {
+            exists: !!webcamVideoRef.current,
+            readyState: webcamVideoRef.current?.readyState,
+            videoWidth: webcamVideoRef.current?.videoWidth,
+            videoHeight: webcamVideoRef.current?.videoHeight,
+            srcObject: !!webcamVideoRef.current?.srcObject,
+            paused: webcamVideoRef.current?.paused,
+            currentTime: webcamVideoRef.current?.currentTime
+          };
+          
+          // Only log periodically to reduce console spam
+          const shouldLogDebug = Math.random() < 0.1; // Log 10% of the time
+          if (shouldLogDebug) {
+            console.log("🔍 Webcam element state:", webcamState);
+          }
+          
+          // Skip detection if video dimensions are not ready
+          if (!webcamState.videoWidth || !webcamState.videoHeight) {
+            console.log("⚠️ Webcam video dimensions not ready, skipping detection");
+            return;
+          }
+          
+          // Check if main stream is still active - if not, try to recover
+          if (!webcamStream.active) {
+            console.warn("⚠️ Main webcam stream is inactive, checking video tracks...");
+            const videoTracks = webcamStream.getVideoTracks();
+            const hasLiveTracks = videoTracks.some(track => track.readyState === 'live');
+            
+            if (!hasLiveTracks) {
+              console.warn("⚠️ No live video tracks available - face detection may fail");
+              // Stream is truly dead, face detection won't work
+              return;
+            } else {
+              console.log("✅ Found live video tracks despite inactive stream - continuing detection");
+            }
+          }
+          
+          // Ensure the video element is still using the main stream (not corrupted)
+          if (webcamVideoRef.current.srcObject !== webcamStream) {
+            console.warn("⚠️ Video element stream mismatch detected, re-attaching main stream");
+            webcamVideoRef.current.srcObject = webcamStream;
+            // Give it a moment to re-attach
+            return;
+          }
+          
           const detections = await faceapi
-            .detectSingleFace(webcamVideoRef.current, new faceapi.TinyFaceDetectorOptions())
+            .detectSingleFace(webcamVideoRef.current, new faceapi.TinyFaceDetectorOptions({
+              inputSize: 416,  // Increase from default 416 for better detection
+              scoreThreshold: 0.3  // Lower threshold from default 0.5 to detect faces more easily
+            }))
             .withFaceExpressions();
 
           if (detections) {
@@ -389,13 +439,16 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
           } else {
             console.log("👤 No face detected in frame");
           }
-        } catch (error) {
-          logError("Face detection error", error as Error, "ExperimentView", userId);
+          } catch (error) {
+            logError("Face detection error", error as Error, "ExperimentView", userId);
+          }
         }
-      }
-    }, 500); // Check every 500ms
+      }, 500); // Check every 500ms
 
-    return () => clearInterval(detectInterval);
+      return () => clearInterval(detectInterval);
+    }, 100); // Small delay to let webcam stabilize
+
+    return () => clearTimeout(startDelay);
   }, [modelsLoaded, webcamReady, isPlaying, userId]);
 
   // Track recording duration in real-time
@@ -416,8 +469,18 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
     };
   }, [recordingStartTime, isPlaying]);
 
-  const handlePlay = () => {
-    if (videoRef.current && webcamStream) {
+  const handlePlay = async () => {
+    if (videoRef.current && webcamStream && webcamVideoRef.current) {
+      // Ensure webcam video is playing
+      try {
+        if (webcamVideoRef.current.paused) {
+          await webcamVideoRef.current.play();
+          console.log("✅ Webcam video element started playing");
+        }
+      } catch (error) {
+        console.warn("⚠️ Could not start webcam video element:", error);
+      }
+      
       videoRef.current.play();
       setIsPlaying(true);
 
@@ -449,7 +512,9 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
           throw new Error(`No supported codec found. Tested: ${codecs.join(', ')}`);
         }
 
-        const mediaRecorder = new MediaRecorder(webcamStream, {
+        // Clone the stream for MediaRecorder to prevent affecting face detection
+        const clonedStream = webcamStream.clone();
+        const mediaRecorder = new MediaRecorder(clonedStream, {
           mimeType: selectedCodec,
         });
 
@@ -462,6 +527,13 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
         // Initial onstop placeholder - this will be replaced dynamically in handleStop()
         mediaRecorder.onstop = () => {
           console.log("📹 MediaRecorder stopped - callback will be replaced dynamically");
+        };
+
+        // Add error handler to prevent MediaRecorder errors from affecting the main stream
+        mediaRecorder.onerror = (event) => {
+          console.warn("⚠️ MediaRecorder error (isolated from main stream):", event);
+          logError('MediaRecorder error during recording', new Error(`MediaRecorder error: ${event.error}`), "ExperimentView", userId);
+          // Don't propagate error - let face detection continue with main stream
         };
 
           mediaRecorder.start();
@@ -497,10 +569,21 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
         setRecordingStartTime(recordingStart);
         setRecordingDuration(0);
         
+        // Ensure main webcam stream is still healthy after MediaRecorder failure
+        const mainStreamHealth = {
+          active: webcamStream.active,
+          videoTracks: webcamStream.getVideoTracks().length,
+          firstTrackState: webcamStream.getVideoTracks()[0]?.readyState,
+          firstTrackEnabled: webcamStream.getVideoTracks()[0]?.enabled
+        };
+        
+        console.log("🔍 Main stream health after MediaRecorder failure:", mainStreamHealth);
+        
         logUserAction('webcam_recording_failed_continuing', userId, { 
           errorMessage: (error as Error).message,
           willContinueWithFaceDetection: true,
-          startedDurationTracking: true
+          startedDurationTracking: true,
+          mainStreamHealth
         });
       }
       
@@ -762,74 +845,21 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
 
   return (
     <>
-      {/* Webcam preview - positioned absolutely outside main container */}
-      <div className="fixed top-4 right-4 z-[9999] pointer-events-none">
-        <div className="pointer-events-auto">
-        {showWebcamPreview ? (
-          <div className="relative bg-black rounded-lg overflow-hidden shadow-2xl border-2 border-white/20">
-            <video
-              ref={webcamVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-48 h-36 object-cover"
-            />
-            {/* Face detection indicator */}
-            <div className="absolute top-2 left-2">
-              <div className={`w-3 h-3 rounded-full ${
-                sentimentData.length > 0 ? 'bg-green-400' : 'bg-red-400'
-              } animate-pulse`}></div>
-            </div>
-            {/* Webcam status indicator */}
-            <div className="absolute top-2 right-2">
-              <div className={`w-3 h-3 rounded-full ${
-                webcamReady && webcamStream?.active && webcamStream?.getVideoTracks().some(t => t.readyState === 'live') 
-                  ? 'bg-blue-400' 
-                  : webcamStream?.active 
-                    ? 'bg-yellow-400' 
-                    : 'bg-red-400'
-              }`} title={
-                webcamReady && webcamStream?.active && webcamStream?.getVideoTracks().some(t => t.readyState === 'live')
-                  ? 'Webcam healthy'
-                  : webcamStream?.active 
-                    ? 'Webcam starting...'
-                    : 'Webcam inactive'
-              }></div>
-            </div>
-            {/* Toggle button */}
-            <button
-              onClick={() => setShowWebcamPreview(false)}
-              className="absolute bottom-1 right-1 text-white bg-black/50 hover:bg-black/70 p-1 rounded"
-            >
-              <EyeOff className="w-3 h-3" />
-            </button>
-            {/* Label */}
-            <div className="absolute bottom-1 left-1 text-white text-xs bg-black/50 px-1 rounded">
-              You
-            </div>
-          </div>
-        ) : (
-          /* Hidden video for face detection */
-          <>
-            <video
-              ref={webcamVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="hidden"
-            />
-            {/* Toggle button to show webcam */}
-            <button
-              onClick={() => setShowWebcamPreview(true)}
-              className="bg-black/50 hover:bg-black/70 text-white p-2 rounded"
-              title="Show webcam preview"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-          </>
-        )}
-        </div>
-      </div>
+      {/* Off-screen video for face detection - needs to be "visible" for face-api to work */}
+      <video
+        ref={webcamVideoRef}
+        autoPlay
+        playsInline
+        muted
+        style={{
+          position: 'fixed',
+          top: '-10000px',
+          left: '-10000px',
+          width: '640px',
+          height: '480px',
+          opacity: 0.01
+        }}
+      />
 
       {/* Main content container */}
       <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-br from-slate-50 to-slate-100">
@@ -936,7 +966,10 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
               <Button
                 onClick={handlePlay}
                 size="lg"
-                className="min-w-[200px] bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 text-lg"
+                className="min-w-[200px] text-white font-semibold py-4 px-8 text-lg"
+                style={{ backgroundColor: '#2D4471' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F2D4A'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2D4471'}
                 disabled={!modelsLoaded || !webcamReady || !selectedVideo || videosLoading}
               >
                 <Play className="w-6 h-6 mr-3" />
@@ -972,39 +1005,6 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
         
         {/* Hidden canvas for face-api */}
         <canvas ref={canvasRef} className="hidden" />
-        
-        {/* Development debug info */}
-        {import.meta.env.DEV && (
-          <div className="fixed bottom-4 right-4 bg-black/90 text-white p-4 rounded-lg text-xs max-w-sm">
-            <div className="font-bold mb-2 text-yellow-400">🔧 Debug Panel</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>Models: {modelsLoaded ? '✅' : '❌'}</div>
-              <div>Webcam: {webcamReady ? '✅' : '❌'}</div>
-              <div>Stream: {webcamStream ? '✅' : '❌'}</div>
-              <div>Playing: {isPlaying ? '✅' : '❌'}</div>
-              <div>Processing: {isProcessing ? '✅' : '❌'}</div>
-              <div>Sentiment: {sentimentData.length} pts</div>
-            </div>
-            {webcamStream && (
-              <div className="mt-2 pt-2 border-t border-gray-600">
-                <div>Stream Active: {webcamStream.active ? '✅' : '❌'}</div>
-                <div>Video Tracks: {webcamStream.getVideoTracks().length}</div>
-                {webcamStream.getVideoTracks().map((track, i) => (
-                  <div key={i} className="text-xs">
-                    Track {i}: {track.enabled ? '✅' : '❌'} ({track.readyState})
-                  </div>
-                ))}
-                <div>Recorder: {mediaRecorderRef.current ? mediaRecorderRef.current.state : 'none'}</div>
-                <div>Last Detection: {sentimentData.length > 0 ? 
-                  `${(Date.now() - (sentimentData[sentimentData.length - 1]?.timestamp * 1000 || 0))}ms ago` : 
-                  'none'}</div>
-              </div>
-            )}
-            <div className="mt-2 pt-2 border-t border-gray-600 text-xs text-gray-400">
-              Video Time: {videoRef.current?.currentTime?.toFixed(1) || 0}s
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
