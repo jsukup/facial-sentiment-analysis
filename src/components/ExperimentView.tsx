@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
-import { Play, Square, Eye, EyeOff } from "lucide-react";
+import { Play, Square, Eye, EyeOff, Video } from "lucide-react";
 import * as faceapi from "@vladmandic/face-api";
 import { projectId, publicAnonKey } from "../utils/supabase/info";
 import { loadFaceApiModels, checkTensorFlowBackend } from "../utils/faceapi-loader";
@@ -12,6 +12,14 @@ import {
   formatDuration 
 } from "../utils/durationCalculator";
 import type { WebcamRecordingDuration } from "../types/duration";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Label } from "./ui/label";
 
 interface ExperimentViewProps {
   webcamStream: MediaStream;
@@ -30,6 +38,14 @@ export interface SentimentDataPoint {
     disgusted: number;
     surprised: number;
   };
+}
+
+interface ExperimentVideo {
+  experiment_id: string;
+  video_url: string;
+  video_name: string;
+  duration_seconds: number;
+  is_active: boolean;
 }
 
 export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentViewProps) {
@@ -53,6 +69,11 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
   const [webcamReady, setWebcamReady] = useState(false);
   const [showWebcamPreview, setShowWebcamPreview] = useState(true);
   const [mediaRecorderWorking, setMediaRecorderWorking] = useState(false);
+  
+  // Video selection state
+  const [availableVideos, setAvailableVideos] = useState<ExperimentVideo[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<ExperimentVideo | null>(null);
+  const [videosLoading, setVideosLoading] = useState(true);
   
   // Enhanced webcam recording duration tracking
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
@@ -95,6 +116,69 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
     };
 
     loadModels();
+  }, [userId]);
+
+  // Fetch available experiment videos
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setVideosLoading(true);
+        
+        const response = await fetch(
+          `https://${projectId}.supabase.co/rest/v1/experiment_videos?select=experiment_id,video_url,video_name,duration_seconds,is_active&is_active=eq.true&order=duration_seconds.asc`,
+          {
+            headers: {
+              Authorization: `Bearer ${publicAnonKey}`,
+              'apikey': publicAnonKey
+            }
+          }
+        );
+
+        if (response.ok) {
+          const videos: ExperimentVideo[] = await response.json();
+          setAvailableVideos(videos);
+          
+          // Set default video (first one, which should be shortest due to ordering)
+          if (videos.length > 0) {
+            setSelectedVideo(videos[0]);
+            logUserAction('experiment_videos_loaded', userId, { 
+              videoCount: videos.length,
+              defaultVideo: videos[0].video_name 
+            });
+          }
+        } else {
+          logError('Failed to fetch experiment videos', new Error(`HTTP ${response.status}`), 'ExperimentView', userId);
+          
+          // Fallback to BigBuckBunny if API fails
+          const fallbackVideo: ExperimentVideo = {
+            experiment_id: 'fallback',
+            video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            video_name: 'Big Buck Bunny (Fallback)',
+            duration_seconds: 596,
+            is_active: true
+          };
+          setAvailableVideos([fallbackVideo]);
+          setSelectedVideo(fallbackVideo);
+        }
+      } catch (error) {
+        logError('Error fetching experiment videos', error as Error, 'ExperimentView', userId);
+        
+        // Fallback to BigBuckBunny if fetch fails
+        const fallbackVideo: ExperimentVideo = {
+          experiment_id: 'fallback',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          video_name: 'Big Buck Bunny (Fallback)',
+          duration_seconds: 596,
+          is_active: true
+        };
+        setAvailableVideos([fallbackVideo]);
+        setSelectedVideo(fallbackVideo);
+      } finally {
+        setVideosLoading(false);
+      }
+    };
+
+    fetchVideos();
   }, [userId]);
 
   // Safety net: if webcam stream exists but webcamReady is still false after 5 seconds, force it
@@ -627,111 +711,15 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
     formData.append('userId', userId);
     formData.append('duration', finalDuration.toString()); // Add validated video duration
     
-    // Get experiment ID (keeping existing logic)
-    let experimentId: string | null = null;
-    try {
-      logUserAction('experiment_fetch_started', userId, { projectId, hasApiKey: !!publicAnonKey });
-      
-      // First try to get active experiments
-      let expResponse = await fetch(
-        `https://${projectId}.supabase.co/rest/v1/experiment_videos?select=experiment_id,video_name,is_active&is_active=eq.true&limit=1`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-            'apikey': publicAnonKey
-          }
-        }
-      );
-      
-      logUserAction('active_experiments_response', userId, { 
-        status: expResponse.status, 
-        ok: expResponse.ok,
-        statusText: expResponse.statusText 
-      });
-      
-      if (expResponse.ok) {
-        const experiments = await expResponse.json();
-        logUserAction('active_experiments_data', userId, { 
-          experimentsCount: experiments?.length || 0, 
-          experiments: experiments 
-        });
-        
-        if (experiments && experiments.length > 0) {
-          experimentId = experiments[0].experiment_id;
-          logUserAction('experiment_id_fetched', userId, { 
-            experimentId, 
-            videoName: experiments[0].video_name,
-            isActive: experiments[0].is_active 
-          });
-        } else {
-          logUserAction('no_active_experiments_in_response', userId, { experiments });
-        }
-      } else {
-        const errorText = await expResponse.text();
-        logError('Active experiments fetch failed', new Error(`HTTP ${expResponse.status}: ${errorText}`), "ExperimentView", userId);
-      }
-      
-      // Fallback: if no active experiments found, get any experiment
-      if (!experimentId) {
-        logUserAction('trying_fallback_experiments', userId);
-        expResponse = await fetch(
-          `https://${projectId}.supabase.co/rest/v1/experiment_videos?select=experiment_id,video_name,is_active&limit=1`,
-          {
-            headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
-              'apikey': publicAnonKey
-            }
-          }
-        );
-        
-        logUserAction('fallback_experiments_response', userId, { 
-          status: expResponse.status, 
-          ok: expResponse.ok 
-        });
-        
-        if (expResponse.ok) {
-          const allExperiments = await expResponse.json();
-          logUserAction('fallback_experiments_data', userId, { 
-            experimentsCount: allExperiments?.length || 0, 
-            experiments: allExperiments 
-          });
-          
-          if (allExperiments && allExperiments.length > 0) {
-            experimentId = allExperiments[0].experiment_id;
-            logUserAction('fallback_experiment_id_fetched', userId, { 
-              experimentId, 
-              videoName: allExperiments[0].video_name,
-              isActive: allExperiments[0].is_active 
-            });
-          } else {
-            logUserAction('no_experiments_found_in_fallback', userId, { allExperiments });
-          }
-        } else {
-          const errorText = await expResponse.text();
-          logError('Fallback experiments fetch failed', new Error(`HTTP ${expResponse.status}: ${errorText}`), "ExperimentView", userId);
-        }
-      }
-      
-      // Final validation and logging
-      if (!experimentId) {
-        logError('No experiments found in database - this will cause experiment_id to be null in user_webcapture', 
-          new Error('No experiment videos available - check database and RLS policies'), "ExperimentView", userId);
-        logUserAction('experiment_id_resolution_failed', userId, { 
-          suggestion: 'Check if experiment_videos table has data and RLS policies allow anonymous access' 
-        });
-      } else {
-        logUserAction('experiment_id_resolution_success', userId, { 
-          finalExperimentId: experimentId,
-          willBeStoredInWebcapture: true 
-        });
-      }
-    } catch (expError) {
-      logError('Error fetching experiment ID', expError as Error, "ExperimentView", userId);
-      logUserAction('experiment_fetch_exception', userId, { 
-        errorMessage: (expError as Error).message,
-        suggestion: 'Check network connectivity and Supabase configuration' 
-      });
-    }
+    // Use the selected video's experiment ID directly
+    const experimentId = selectedVideo?.experiment_id || null;
+    
+    logUserAction('experiment_id_from_selection', userId, { 
+      experimentId,
+      videoName: selectedVideo?.video_name,
+      videoUrl: selectedVideo?.video_url,
+      hasSelectedVideo: !!selectedVideo
+    });
     
     // Only append experimentId if we have one, otherwise backend will handle null
     if (experimentId) {
@@ -870,15 +858,77 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
             )}
           </div>
 
+          {/* Video Selection Dropdown */}
+          {!isPlaying && !isProcessing && (
+            <div className="max-w-md mx-auto space-y-2">
+              <Label htmlFor="video-select" className="text-sm font-medium flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                Choose Experiment Video
+              </Label>
+              <Select
+                value={selectedVideo?.experiment_id || ''}
+                onValueChange={(value) => {
+                  const video = availableVideos.find(v => v.experiment_id === value);
+                  if (video) {
+                    setSelectedVideo(video);
+                    logUserAction('experiment_video_changed', userId, { 
+                      videoName: video.video_name,
+                      duration: video.duration_seconds 
+                    });
+                  }
+                }}
+                disabled={videosLoading || isPlaying}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={videosLoading ? "Loading videos..." : "Select a video"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVideos.map((video) => (
+                    <SelectItem key={video.experiment_id} value={video.experiment_id}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{video.video_name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {video.duration_seconds < 60 
+                            ? `${video.duration_seconds}s` 
+                            : `${Math.round(video.duration_seconds / 60)}m`}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedVideo && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Duration: {selectedVideo.duration_seconds < 60 
+                    ? `${selectedVideo.duration_seconds} seconds` 
+                    : `${Math.floor(selectedVideo.duration_seconds / 60)} minutes ${selectedVideo.duration_seconds % 60} seconds`}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
             <video
               ref={videoRef}
               className="w-full h-full object-contain"
               onEnded={handleVideoEnded}
               controls={false}
+              key={selectedVideo?.experiment_id} // Force reload when video changes
             >
-              <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4" />
+              {selectedVideo && (
+                <source src={selectedVideo.video_url} type="video/mp4" />
+              )}
             </video>
+            
+            {/* Loading overlay when no video selected */}
+            {!selectedVideo && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+                <div className="text-white text-center">
+                  <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>Loading videos...</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {!isPlaying && !isProcessing && (
@@ -887,14 +937,16 @@ export function ExperimentView({ webcamStream, userId, onComplete }: ExperimentV
                 onClick={handlePlay}
                 size="lg"
                 className="min-w-[200px] bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 text-lg"
-                disabled={!modelsLoaded || !webcamReady}
+                disabled={!modelsLoaded || !webcamReady || !selectedVideo || videosLoading}
               >
                 <Play className="w-6 h-6 mr-3" />
-                {!modelsLoaded ? "Loading AI models..." : 
+                {videosLoading ? "Loading videos..." :
+                 !selectedVideo ? "Select a video..." :
+                 !modelsLoaded ? "Loading AI models..." : 
                  !webcamReady ? "Starting webcam..." : 
                  "Start Experiment"}
               </Button>
-              {modelsLoaded && webcamReady && (
+              {modelsLoaded && webcamReady && selectedVideo && !videosLoading && (
                 <p className="text-sm text-muted-foreground animate-pulse">
                   👆 Click to begin face detection and video playback
                 </p>

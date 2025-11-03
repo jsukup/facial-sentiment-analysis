@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, ReferenceLine } from "recharts";
-import { Play, Pause, Users, LogOut, Clock, Timer, TrendingUp } from "lucide-react";
+import { Play, Pause, Users, LogOut, Clock, Timer, TrendingUp, Video } from "lucide-react";
 import { Button } from "./ui/button";
 import type { SentimentDataPoint } from "./ExperimentView";
 import { authenticatedFetch, getApiBaseUrl, clearAdminToken, isAdminAuthenticated } from "../utils/auth";
@@ -100,6 +100,14 @@ interface DurationAnalytics {
   };
 }
 
+interface ExperimentVideo {
+  experiment_id: string;
+  video_url: string;
+  video_name: string;
+  duration_seconds: number;
+  is_active: boolean;
+}
+
 const MINIMUM_PARTICIPANT_THRESHOLD = 5;
 
 const DURATION_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -122,6 +130,11 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
   const [durationAnalytics, setDurationAnalytics] = useState<DurationAnalytics | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  
+  // Video selection state
+  const [availableVideos, setAvailableVideos] = useState<ExperimentVideo[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<ExperimentVideo | null>(null);
+  const [videosLoading, setVideosLoading] = useState(true);
 
   const [filters, setFilters] = useState<DemographicFilter>({
     age: "all",
@@ -136,14 +149,15 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     onLogout?.();
   };
 
-  // Fetch video URL from Supabase
+  // Fetch available experiment videos
   useEffect(() => {
-    const fetchVideoUrl = async () => {
+    const fetchVideos = async () => {
       try {
+        setVideosLoading(true);
         const apiBaseUrl = getApiBaseUrl();
-        // Fetch experiment video from the same endpoint used in ExperimentView
-        const expResponse = await fetch(
-          `${apiBaseUrl}/rest/v1/experiment_videos?select=experiment_id,video_name,is_active&is_active=eq.true&limit=1`,
+        
+        const response = await fetch(
+          `${apiBaseUrl}/rest/v1/experiment_videos?select=experiment_id,video_url,video_name,duration_seconds,is_active&is_active=eq.true&order=duration_seconds.asc`,
           {
             headers: {
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
@@ -151,52 +165,64 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
             }
           }
         );
-        
-        if (expResponse.ok) {
-          const experiments = await expResponse.json();
+
+        if (response.ok) {
+          const videos: ExperimentVideo[] = await response.json();
+          setAvailableVideos(videos);
           
-          if (experiments && experiments.length > 0) {
-            const videoName = experiments[0].video_name;
-            // Construct Supabase storage URL for the video
-            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-            const storageUrl = `https://${projectId}.supabase.co/storage/v1/object/public/experiment_videos/${videoName}`;
-            setVideoUrl(storageUrl);
-          } else {
-            // Fallback: try to get any experiment video
-            const fallbackResponse = await fetch(
-              `${apiBaseUrl}/rest/v1/experiment_videos?select=experiment_id,video_name,is_active&limit=1`,
-              {
-                headers: {
-                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                  'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-                }
-              }
-            );
-            
-            if (fallbackResponse.ok) {
-              const allExperiments = await fallbackResponse.json();
-              if (allExperiments && allExperiments.length > 0) {
-                const videoName = allExperiments[0].video_name;
-                const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-                const storageUrl = `https://${projectId}.supabase.co/storage/v1/object/public/experiment_videos/${videoName}`;
-                setVideoUrl(storageUrl);
-              }
-            }
+          // Set default video (first one, which should be shortest due to ordering)
+          if (videos.length > 0) {
+            setSelectedVideo(videos[0]);
+            setVideoUrl(videos[0].video_url);
+            logUserAction('admin_experiment_videos_loaded', 'admin', { 
+              videoCount: videos.length,
+              defaultVideo: videos[0].video_name 
+            });
           }
+        } else {
+          logError('Failed to fetch experiment videos', new Error(`HTTP ${response.status}`), 'AdminDashboard');
+          
+          // Fallback to BigBuckBunny if API fails
+          const fallbackVideo: ExperimentVideo = {
+            experiment_id: 'fallback',
+            video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            video_name: 'Big Buck Bunny (Fallback)',
+            duration_seconds: 596,
+            is_active: true
+          };
+          setAvailableVideos([fallbackVideo]);
+          setSelectedVideo(fallbackVideo);
+          setVideoUrl(fallbackVideo.video_url);
         }
       } catch (error) {
-        console.error('Error fetching video URL:', error);
-        // Use BigBuckBunny as fallback
-        setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+        logError('Error fetching experiment videos', error as Error, 'AdminDashboard');
+        
+        // Fallback to BigBuckBunny if fetch fails
+        const fallbackVideo: ExperimentVideo = {
+          experiment_id: 'fallback',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          video_name: 'Big Buck Bunny (Fallback)',
+          duration_seconds: 596,
+          is_active: true
+        };
+        setAvailableVideos([fallbackVideo]);
+        setSelectedVideo(fallbackVideo);
+        setVideoUrl(fallbackVideo.video_url);
+      } finally {
+        setVideosLoading(false);
       }
     };
-    
-    fetchVideoUrl();
+
+    fetchVideos();
   }, []);
 
-  // Fetch all data from backend
+  // Fetch all data from backend (filtered by selected video)
   useEffect(() => {
     const fetchData = async () => {
+      // Don't fetch data if no video is selected yet
+      if (!selectedVideo) {
+        return;
+      }
       try {
         // Check authentication before making requests
         if (!isAdminAuthenticated()) {
@@ -205,10 +231,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
         }
 
         const apiBaseUrl = getApiBaseUrl();
+        
+        // Add experiment_id filter to API calls when selectedVideo is available
+        const experimentParam = selectedVideo ? `?experiment_id=${selectedVideo.experiment_id}` : '';
+        
         const [demographicsRes, sentimentRes, durationRes] = await Promise.all([
-          authenticatedFetch(`${apiBaseUrl}/server/all-demographics`),
-          authenticatedFetch(`${apiBaseUrl}/server/all-sentiment`),
-          authenticatedFetch(`${apiBaseUrl}/server/duration-analytics`),
+          authenticatedFetch(`${apiBaseUrl}/server/all-demographics${experimentParam}`),
+          authenticatedFetch(`${apiBaseUrl}/server/all-sentiment${experimentParam}`),
+          authenticatedFetch(`${apiBaseUrl}/server/duration-analytics${experimentParam}`),
         ]);
 
         const demographicsData = await demographicsRes.json();
@@ -387,7 +417,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     };
 
     fetchData();
-  }, []);
+  }, [selectedVideo]); // Refetch data when selected video changes
 
   // Apply demographic filters and privacy threshold
   useEffect(() => {
@@ -744,6 +774,58 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
             <CardDescription>Control playback to view sentiment data at different timestamps</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Video Selection Dropdown */}
+            <div className="max-w-md space-y-2">
+              <Label htmlFor="admin-video-select" className="text-sm font-medium flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                Select Experiment Video
+              </Label>
+              <Select
+                value={selectedVideo?.experiment_id || ''}
+                onValueChange={(value) => {
+                  const video = availableVideos.find(v => v.experiment_id === value);
+                  if (video) {
+                    setSelectedVideo(video);
+                    setVideoUrl(video.video_url);
+                    // Reset video player state
+                    setVideoLoaded(false);
+                    setCurrentTime(0);
+                    setIsPlaying(false);
+                    logUserAction('admin_experiment_video_changed', 'admin', { 
+                      videoName: video.video_name,
+                      duration: video.duration_seconds 
+                    });
+                  }
+                }}
+                disabled={videosLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={videosLoading ? "Loading videos..." : "Select a video"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVideos.map((video) => (
+                    <SelectItem key={video.experiment_id} value={video.experiment_id}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{video.video_name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {video.duration_seconds < 60 
+                            ? `${video.duration_seconds}s` 
+                            : `${Math.round(video.duration_seconds / 60)}m`}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedVideo && (
+                <p className="text-xs text-muted-foreground">
+                  Duration: {selectedVideo.duration_seconds < 60 
+                    ? `${selectedVideo.duration_seconds} seconds` 
+                    : `${Math.floor(selectedVideo.duration_seconds / 60)} minutes ${selectedVideo.duration_seconds % 60} seconds`}
+                </p>
+              )}
+            </div>
+            
             <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
               <video
                 ref={videoRef}
@@ -753,11 +835,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                 onError={() => {
                   // Fallback for video loading error
                   if (videoRef.current) {
-                    setDuration(30); // Set a default duration for demo
+                    setDuration(selectedVideo?.duration_seconds || 30);
                   }
                 }}
+                key={selectedVideo?.experiment_id} // Force reload when video changes
               >
-                {/* Use video from Supabase storage */}
+                {/* Use video from selected video */}
                 {videoUrl && <source src={videoUrl} type="video/mp4" />}
               </video>
               
@@ -807,7 +890,17 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
 
         {/* Real-time Monitoring Section */}
         <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Real-time Monitoring</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Real-time Monitoring</h2>
+            {selectedVideo && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-lg">
+                <Video className="w-4 h-4 text-blue-600" />
+                <span className="text-sm text-blue-800 font-medium">
+                  Showing data for: {selectedVideo.video_name}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         
         {!showPrivacyWarning && (
@@ -877,7 +970,17 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
         {durationAnalytics && !showPrivacyWarning && (
           <>
             <div className="mt-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Recording Duration Analytics</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Recording Duration Analytics</h2>
+                {selectedVideo && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg">
+                    <Video className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-green-800 font-medium">
+                      Duration data for: {selectedVideo.video_name}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
