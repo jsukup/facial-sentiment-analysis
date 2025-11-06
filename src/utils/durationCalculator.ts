@@ -201,13 +201,14 @@ export function logDurationCalculation(
   context: string,
   additionalData?: Record<string, any>
 ): void {
-  console.log(`🕐 Duration calculation [${context}]:`, {
-    duration: result.duration,
-    isValid: result.isValid,
-    source: result.source,
-    validationError: result.validationError,
-    formatted: formatDuration(result.duration),
-    precise: formatPreciseDuration(result.duration),
-    ...additionalData
-  });
+  // Duration calculation logging removed for production
+  // console.log(`🕐 Duration calculation [${context}]:`, {
+  //   duration: result.duration,
+  //   isValid: result.isValid,
+  //   source: result.source,
+  //   validationError: result.validationError,
+  //   formatted: formatDuration(result.duration),
+  //   precise: formatPreciseDuration(result.duration),
+  //   ...additionalData
+  // });
 }

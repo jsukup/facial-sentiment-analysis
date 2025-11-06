@@ -695,10 +695,28 @@ app.post("/server/sentiment", async (c) => {
 // Get all demographics (admin only - with auth check)
 app.get("/server/all-demographics", requireAuth, async (c) => {
   try {
-    const { data, error } = await supabase
+    const experimentId = c.req.query('experiment_id');
+    
+    let query = supabase
       .from('user_demographics')
       .select('*')
       .order('created_at', { ascending: false });
+    
+    // Filter by experiment if provided
+    if (experimentId) {
+      console.log(`🔍 Filtering demographics by experiment: ${experimentId}`);
+      // Join with user_webcapture to filter by experiment_id
+      query = supabase
+        .from('user_demographics')
+        .select(`
+          *,
+          user_webcapture!inner(experiment_id)
+        `)
+        .eq('user_webcapture.experiment_id', experimentId)
+        .order('created_at', { ascending: false });
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.log(`Database error: ${error.message}`);
@@ -824,16 +842,28 @@ app.get("/server/sentiment-debug", requireAuth, async (c) => {
 // Get all sentiment data (admin only - with auth check)
 app.get("/server/all-sentiment", requireAuth, async (c) => {
   try {
-    // First try the complex join query for complete data
-    const { data: joinedData, error: joinError } = await supabase
+    const experimentId = c.req.query('experiment_id');
+    
+    // Build base query with joins
+    let baseQuery = supabase
       .from('user_sentiment')
       .select(`
         *,
         user_webcapture!inner(
           user_uid,
+          experiment_id,
           user_demographics!inner(uid)
         )
-      `)
+      `);
+    
+    // Add experiment filter if provided
+    if (experimentId) {
+      console.log(`🔍 Filtering sentiment by experiment: ${experimentId}`);
+      baseQuery = baseQuery.eq('user_webcapture.experiment_id', experimentId);
+    }
+    
+    // First try the complex join query for complete data
+    const { data: joinedData, error: joinError } = await baseQuery
       .order('created_at', { ascending: false });
 
     // If joined query succeeds and has data, use it
@@ -965,13 +995,36 @@ app.get("/server/webcam-video/:userId", requireAuth, async (c) => {
   }
 });
 
+// Get all experiment videos (admin only)
+app.get("/server/experiment-videos", requireAuth, async (c) => {
+  try {
+    const { data, error } = await supabase
+      .from('experiment_videos')
+      .select('experiment_id, video_url, video_name, duration_seconds, is_active')
+      .eq('is_active', true)
+      .order('duration_seconds', { ascending: true });
+
+    if (error) {
+      console.log(`Database error: ${error.message}`);
+      return c.json({ error: `Failed to fetch experiment videos: ${error.message}` }, 500);
+    }
+
+    console.log(`✅ Retrieved ${data?.length || 0} active experiment videos`);
+    return c.json({ videos: data || [] });
+  } catch (error) {
+    console.log(`Error fetching experiment videos: ${error}`);
+    return c.json({ error: `Failed to fetch experiment videos: ${error.message}` }, 500);
+  }
+});
+
 // Get duration analytics for admin dashboard
 app.get("/server/duration-analytics", requireAuth, async (c) => {
   try {
+    const experimentId = c.req.query('experiment_id');
     console.log('📊 Fetching duration analytics for admin dashboard');
 
-    // Get all webcapture records with demographics data
-    const { data: webcaptureData, error: webcaptureError } = await supabase
+    // Build query with optional experiment filter
+    let query = supabase
       .from('user_webcapture')
       .select(`
         capture_id,
@@ -987,7 +1040,15 @@ app.get("/server/duration-analytics", requireAuth, async (c) => {
           nationality
         )
       `)
-      .not('duration_seconds', 'is', null)
+      .not('duration_seconds', 'is', null);
+    
+    // Add experiment filter if provided
+    if (experimentId) {
+      console.log(`🔍 Filtering duration analytics by experiment: ${experimentId}`);
+      query = query.eq('experiment_id', experimentId);
+    }
+
+    const { data: webcaptureData, error: webcaptureError } = await query
       .order('captured_at', { ascending: false });
 
     if (webcaptureError) {
