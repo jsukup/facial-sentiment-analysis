@@ -23,6 +23,15 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     setError("");
     setLoading(true);
 
+    // Development mode bypass for testing
+    if (import.meta.env.DEV && username === "admin" && password === "admin") {
+      // Store a mock token for development
+      localStorage.setItem('adminToken', 'dev-mock-token');
+      localStorage.setItem('adminTokenExpiry', String(Date.now() + (24 * 60 * 60 * 1000))); // 24 hours
+      onLoginSuccess();
+      return;
+    }
+
     try {
       // Authenticate with JWT-based admin login
       const response = await fetch(`${API_BASE_URL}/server/admin/login`, {
