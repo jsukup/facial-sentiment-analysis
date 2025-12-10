@@ -9,10 +9,59 @@ interface WebcamSetupProps {
 
 export function WebcamSetup({ onReady }: WebcamSetupProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number>();
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [useCanvas, setUseCanvas] = useState(false);
+
+  const startCanvasRendering = (mediaStream: MediaStream) => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    
+    if (!canvas || !video) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas dimensions
+    canvas.width = 1280;
+    canvas.height = 720;
+    
+    // Create a hidden video element for rendering
+    const hiddenVideo = document.createElement('video');
+    hiddenVideo.srcObject = mediaStream;
+    hiddenVideo.autoPlay = true;
+    hiddenVideo.playsInline = true;
+    hiddenVideo.muted = true;
+    hiddenVideo.style.position = 'absolute';
+    hiddenVideo.style.left = '-9999px';
+    document.body.appendChild(hiddenVideo);
+    
+    const renderFrame = () => {
+      if (hiddenVideo.readyState >= 2) {
+        ctx.drawImage(hiddenVideo, 0, 0, canvas.width, canvas.height);
+      }
+      animationFrameRef.current = requestAnimationFrame(renderFrame);
+    };
+    
+    hiddenVideo.onloadedmetadata = () => {
+      hiddenVideo.play().then(() => {
+        console.log("🎨 Canvas rendering started");
+        renderFrame();
+      }).catch(console.warn);
+    };
+    
+    // Cleanup function
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      document.body.removeChild(hiddenVideo);
+    };
+  };
 
   const initWebcam = async () => {
     setIsLoading(true);
@@ -50,42 +99,57 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         
-        // Set a timeout fallback for production
-        const playbackTimeout = setTimeout(() => {
-          if (videoRef.current && !videoRef.current.paused && mediaStream.active) {
-            console.log("⏰ Timeout reached but stream appears active, proceeding");
-            streamRef.current = mediaStream;
-            setStream(mediaStream);
-            setIsLoading(false);
-          }
-        }, 3000);
-        
-        // Wait for video metadata to load and then play
-        videoRef.current.onloadedmetadata = () => {
-          clearTimeout(playbackTimeout);
-          if (videoRef.current) {
-            videoRef.current.play()
-              .then(() => {
-                console.log("✅ Video playback started successfully");
-                streamRef.current = mediaStream;
-                setStream(mediaStream);
-                setIsLoading(false);
-              })
-              .catch((playError: Error) => {
-                console.error("❌ Video playback error:", playError);
-                // In production, if autoplay fails but stream is active, still proceed
-                if (isProduction && mediaStream.active) {
-                  console.warn("⚠️ Playback failed but stream is active, proceeding anyway");
+        // For production, immediately try to play and set stream, with canvas fallback
+        if (isProduction) {
+          console.log("🚀 Production mode: Immediate playback attempt");
+          
+          // Immediately mark stream as ready for production
+          streamRef.current = mediaStream;
+          setStream(mediaStream);
+          setIsLoading(false);
+          
+          // Try to play the video but don't wait for it, with canvas fallback
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.play()
+                .then(() => {
+                  console.log("✅ Video playing in production");
+                  // Check if video is actually rendering after a short delay
+                  setTimeout(() => {
+                    if (videoRef.current && (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0)) {
+                      console.log("🎨 Video not rendering, switching to canvas");
+                      setUseCanvas(true);
+                      startCanvasRendering(mediaStream);
+                    }
+                  }, 500);
+                })
+                .catch((e: Error) => {
+                  console.warn("⚠️ Video autoplay failed in production, switching to canvas:", e);
+                  setUseCanvas(true);
+                  startCanvasRendering(mediaStream);
+                });
+            }
+          }, 100);
+          
+        } else {
+          // Development mode: Wait for proper video setup
+          videoRef.current.onloadedmetadata = () => {
+            if (videoRef.current) {
+              videoRef.current.play()
+                .then(() => {
+                  console.log("✅ Video playback started successfully");
                   streamRef.current = mediaStream;
                   setStream(mediaStream);
                   setIsLoading(false);
-                } else {
+                })
+                .catch((playError: Error) => {
+                  console.error("❌ Video playback error:", playError);
                   setError(`Video playback failed: ${playError.message}`);
                   setIsLoading(false);
-                }
-              });
-          }
-        };
+                });
+            }
+          };
+        }
       } else {
         // Fallback if videoRef is not available
         streamRef.current = mediaStream;
@@ -112,8 +176,12 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
   useEffect(() => {
     initWebcam();
 
-    // Don't cleanup the stream when component unmounts - it will be used in ExperimentView
-    // The stream will be cleaned up by the App component when experiment completes
+    // Cleanup canvas rendering on unmount
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, []);
 
   const handleReady = () => {
@@ -158,17 +226,34 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
             </div>
           ) : (
             <>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-                style={{ backgroundColor: 'transparent' }}
-                onCanPlay={() => console.log("📹 Video can start playing")}
-                onPlay={() => console.log("▶️ Video is playing")}
-                onError={(e: React.SyntheticEvent<HTMLVideoElement, Event>) => console.error("❌ Video error:", e)}
-              />
+              {useCanvas ? (
+                <canvas
+                  ref={canvasRef}
+                  className="w-full h-full object-cover"
+                  style={{ backgroundColor: 'transparent', display: 'block' }}
+                />
+              ) : (
+                <video
+                  ref={(el: HTMLVideoElement | null) => {
+                    videoRef.current = el;
+                    if (el && stream) {
+                      console.log("🎬 Video element mounted with stream");
+                      el.srcObject = stream;
+                      // Force immediate playback
+                      el.play().catch((e: Error) => console.log("⚠️ Play attempt:", e));
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  controls={false}
+                  className="w-full h-full object-cover"
+                  style={{ backgroundColor: 'transparent', display: 'block' }}
+                  onCanPlay={() => console.log("📹 Video can start playing")}
+                  onPlay={() => console.log("▶️ Video is playing")}
+                  onError={(e: React.SyntheticEvent<HTMLVideoElement, Event>) => console.error("❌ Video error:", e)}
+                />
+              )}
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute inset-8 border-2 border-white/30 rounded-lg" />
                 <div className="absolute top-8 left-8 w-6 h-6 border-t-2 border-l-2 border-white rounded-tl-lg" />
