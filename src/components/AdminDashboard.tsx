@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
@@ -142,6 +142,39 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     race: "all",
     nationality: "all",
   });
+
+  // Duration state protection
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
+  const [lastValidDuration, setLastValidDuration] = useState<number>(0);
+
+  // Helper function to get safe duration value with fallback hierarchy
+  const getSafeDuration = useCallback(() => {
+    // Priority: actual video duration > last valid duration > selected video metadata > fallback
+    if (duration > 0 && !isLoadingVideo) {
+      return duration;
+    }
+    if (lastValidDuration > 0) {
+      return lastValidDuration;
+    }
+    if (selectedVideo?.duration_seconds) {
+      return selectedVideo.duration_seconds;
+    }
+    return 15; // Default fallback for demo purposes
+  }, [duration, lastValidDuration, selectedVideo?.duration_seconds, isLoadingVideo]);
+
+  // Debounced seek function to prevent rapid duration changes
+  const debouncedSeek = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    return (value: number[]) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (videoRef.current && !isLoadingVideo) {
+          videoRef.current.currentTime = value[0];
+          setCurrentTime(value[0]);
+        }
+      }, 50); // 50ms debounce
+    };
+  }, [isLoadingVideo]);
 
   // Logout handler
   const handleLogout = () => {
@@ -522,11 +555,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
 
   // Update aggregated data for timeline
   useEffect(() => {
-    if (filteredUserData.length === 0 || duration === 0) return;
+    const safeDuration = getSafeDuration();
+    if (filteredUserData.length === 0 || safeDuration === 0) return;
 
     const buckets: TimeBucket[] = [];
     const bucketSize = 5; // 5 second buckets
-    const numBuckets = Math.ceil(duration / bucketSize);
+    const numBuckets = Math.ceil(safeDuration / bucketSize);
 
     for (let i = 0; i < numBuckets; i++) {
       const startTime = i * bucketSize;
@@ -577,7 +611,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     }
 
     setAggregatedData(buckets);
-  }, [filteredUserData, duration]);
+  }, [filteredUserData, getSafeDuration]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
@@ -585,12 +619,17 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     }
   };
 
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      setVideoLoaded(true);
+  const handleLoadedMetadata = useCallback(() => {
+    if (videoRef.current && !isLoadingVideo) {
+      const videoDuration = videoRef.current.duration;
+      if (videoDuration > 0 && isFinite(videoDuration)) {
+        setDuration(videoDuration);
+        setLastValidDuration(videoDuration);
+        setVideoLoaded(true);
+        setIsLoadingVideo(false);
+      }
     }
-  };
+  }, [isLoadingVideo]);
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -603,12 +642,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
     }
   };
 
-  const handleSeek = (value: number[]) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
-    }
-  };
+  const handleSeek = debouncedSeek;
 
   const getCurrentSentimentData = () => {
     if (!currentSentiment) return [];
@@ -822,7 +856,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                   if (video) {
                     setSelectedVideo(video);
                     setVideoUrl(video.video_url);
-                    // Reset video player state
+                    // Reset video player state and set loading
+                    setIsLoadingVideo(true);
                     setVideoLoaded(false);
                     setCurrentTime(0);
                     setIsPlaying(false);
@@ -868,10 +903,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onError={() => {
-                  // Fallback for video loading error
-                  if (videoRef.current) {
-                    setDuration(selectedVideo?.duration_seconds || 30);
+                  // Fallback for video loading error - use safe duration
+                  if (selectedVideo?.duration_seconds) {
+                    setDuration(selectedVideo.duration_seconds);
+                    setLastValidDuration(selectedVideo.duration_seconds);
                   }
+                  setIsLoadingVideo(false);
                 }}
                 key={selectedVideo?.experiment_id} // Force reload when video changes
               >
@@ -909,13 +946,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                   <Slider
                     value={[currentTime]}
                     min={0}
-                    max={duration || 100}
+                    max={getSafeDuration()}
                     step={0.1}
                     onValueChange={handleSeek}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime(duration)}</span>
+                    <span>{formatTime(getSafeDuration())}</span>
                   </div>
                 </div>
               </div>
@@ -973,7 +1010,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps = {}) {
                       dataKey="time"
                       type="number"
                       scale="linear"
-                      domain={[0, duration || 100]}
+                      domain={[0, getSafeDuration()]}
                       tickFormatter={(value) => formatTime(value)}
                     />
                     <YAxis />
