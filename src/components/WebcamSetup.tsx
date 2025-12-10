@@ -30,10 +30,30 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        
+        // Wait for video metadata to load and then play
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play()
+              .then(() => {
+                console.log("✅ Video playback started successfully");
+                streamRef.current = mediaStream;
+                setStream(mediaStream);
+                setIsLoading(false);
+              })
+              .catch((playError) => {
+                console.error("❌ Video playback error:", playError);
+                setError(`Video playback failed: ${playError.message}`);
+                setIsLoading(false);
+              });
+          }
+        };
+      } else {
+        // Fallback if videoRef is not available
+        streamRef.current = mediaStream;
+        setStream(mediaStream);
+        setIsLoading(false);
       }
-      streamRef.current = mediaStream;
-      setStream(mediaStream);
-      setIsLoading(false);
     } catch (err: unknown) {
       const error = err as Error;
       logError("Webcam access error", error, "WebcamSetup");
@@ -106,6 +126,10 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
                 playsInline
                 muted
                 className="w-full h-full object-cover"
+                style={{ backgroundColor: 'transparent' }}
+                onCanPlay={() => console.log("📹 Video can start playing")}
+                onPlay={() => console.log("▶️ Video is playing")}
+                onError={(e: React.SyntheticEvent<HTMLVideoElement, Event>) => console.error("❌ Video error:", e)}
               />
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute inset-8 border-2 border-white/30 rounded-lg" />
