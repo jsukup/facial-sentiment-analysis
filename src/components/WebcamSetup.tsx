@@ -18,6 +18,15 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
     setIsLoading(true);
     setError("");
     
+    // Debug environment
+    const isProduction = process.env.NODE_ENV === 'production';
+    console.log("🔍 Environment:", {
+      isProduction,
+      isSecureContext: window.isSecureContext,
+      protocol: window.location.protocol,
+      userAgent: navigator.userAgent
+    });
+    
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -28,11 +37,32 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
         audio: false
       });
 
+      console.log("📹 MediaStream obtained:", {
+        active: mediaStream.active,
+        tracks: mediaStream.getTracks().map(t => ({ 
+          kind: t.kind, 
+          label: t.label, 
+          enabled: t.enabled,
+          readyState: t.readyState 
+        }))
+      });
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         
+        // Set a timeout fallback for production
+        const playbackTimeout = setTimeout(() => {
+          if (videoRef.current && !videoRef.current.paused && mediaStream.active) {
+            console.log("⏰ Timeout reached but stream appears active, proceeding");
+            streamRef.current = mediaStream;
+            setStream(mediaStream);
+            setIsLoading(false);
+          }
+        }, 3000);
+        
         // Wait for video metadata to load and then play
         videoRef.current.onloadedmetadata = () => {
+          clearTimeout(playbackTimeout);
           if (videoRef.current) {
             videoRef.current.play()
               .then(() => {
@@ -41,10 +71,18 @@ export function WebcamSetup({ onReady }: WebcamSetupProps) {
                 setStream(mediaStream);
                 setIsLoading(false);
               })
-              .catch((playError) => {
+              .catch((playError: Error) => {
                 console.error("❌ Video playback error:", playError);
-                setError(`Video playback failed: ${playError.message}`);
-                setIsLoading(false);
+                // In production, if autoplay fails but stream is active, still proceed
+                if (isProduction && mediaStream.active) {
+                  console.warn("⚠️ Playback failed but stream is active, proceeding anyway");
+                  streamRef.current = mediaStream;
+                  setStream(mediaStream);
+                  setIsLoading(false);
+                } else {
+                  setError(`Video playback failed: ${playError.message}`);
+                  setIsLoading(false);
+                }
               });
           }
         };
